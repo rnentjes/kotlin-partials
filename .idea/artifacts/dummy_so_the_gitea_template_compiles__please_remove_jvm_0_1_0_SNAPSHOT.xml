@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="dummy so the gitea template compiles, please remove-jvm-0.1.0-SNAPSHOT">
+    <output-path>$PROJECT_DIR$/build/libs</output-path>
+    <root id="archive" name="dummy so the gitea template compiles, please remove-jvm-0.1.0-SNAPSHOT.jar">
+      <element id="module-output" name="dummy_so_the_gitea_template_compiles,_please_remove.jvmMain" />
+    </root>
+  </artifact>
+</component>

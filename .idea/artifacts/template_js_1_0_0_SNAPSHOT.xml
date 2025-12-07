@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="template-js-1.0.0-SNAPSHOT">
+    <output-path>$PROJECT_DIR$/build/libs</output-path>
+    <root id="archive" name="template-js-1.0.0-SNAPSHOT.jar">
+      <element id="module-output" name="template.jsMain" />
+    </root>
+  </artifact>
+</component>

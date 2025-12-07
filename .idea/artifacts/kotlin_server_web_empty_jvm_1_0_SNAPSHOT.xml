@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="kotlin-server-web-empty-jvm-1.0-SNAPSHOT">
+    <output-path>$PROJECT_DIR$/build/libs</output-path>
+    <root id="archive" name="kotlin-server-web-empty-jvm-1.0-SNAPSHOT.jar">
+      <element id="module-output" name="kotlin-server-web-empty.jvmMain" />
+    </root>
+  </artifact>
+</component>
