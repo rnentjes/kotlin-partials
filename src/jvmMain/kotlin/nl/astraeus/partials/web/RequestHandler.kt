@@ -5,12 +5,14 @@ import io.undertow.server.HttpServerExchange
 import io.undertow.server.handlers.PathHandler
 import io.undertow.server.handlers.resource.PathResourceManager
 import io.undertow.server.handlers.resource.ResourceHandler
+import java.io.Serializable
 import java.nio.file.Paths
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 
-class RequestHandler(
+class RequestHandler<S : Serializable>(
   val defaultPage: KClass<*>,
+  val session: () -> S,
   vararg val mappings: Pair<String, KClass<*>>
 ) : HttpHandler {
   val resourceHandler = ResourceHandler(PathResourceManager(Paths.get("web")))
@@ -36,15 +38,20 @@ class RequestHandler(
 
     if (clazz != null) {
       val request = exchange.request()
+      var session = exchange.getPartialsSession<S>()
+      if (session == null) {
+        session = session()
+        exchange.setPartialsSession(session)
+      }
       val constructor = getConstructor(clazz)
-      val dataType = constructor.parameters[1].type.classifier as KClass<*>
+      val dataType = constructor.parameters[2].type.classifier as KClass<*>
       val data = if (request.pageData == null) {
         dataType.constructors.first().callBy(emptyMap())
       } else {
         (request.pageData as String).decode()
       }
 
-      val handler = constructor.call(request, data) as HttpHandler
+      val handler = constructor.call(request, session, data) as HttpHandler
 
       handler.handleRequest(exchange)
     } else {
@@ -62,8 +69,8 @@ class RequestHandler(
 
     val constructor = constr.first()
 
-    if (constructor.parameters.size != 2) {
-      error("Expected exactly two parameters for a PartialsPage constructor, found ${constructor.parameters.size} in ${clazz.qualifiedName}")
+    if (constructor.parameters.size != 3) {
+      error("Expected exactly three parameters for a PartialsPage constructor (request, session and data), found ${constructor.parameters.size} in ${clazz.qualifiedName}")
     }
 
     return constructor

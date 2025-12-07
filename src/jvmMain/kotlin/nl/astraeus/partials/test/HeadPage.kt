@@ -7,9 +7,11 @@ import java.io.Serializable
 
 abstract class HeadPage<T : Serializable>(
   request: Request,
+  session: TestSession,
   data: T,
-) : PartialsPage<T>(
+) : PartialsPage<TestSession, T>(
   request,
+  session,
   data,
 ) {
   open var pageTitle: String = "Partials"

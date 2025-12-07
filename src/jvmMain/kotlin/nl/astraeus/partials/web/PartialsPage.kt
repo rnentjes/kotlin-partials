@@ -32,8 +32,9 @@ fun <D : Serializable> D.encode(): String {
 
 class NoData : Serializable
 
-abstract class PartialsPage<T : Serializable>(
+abstract class PartialsPage<S : Serializable, T : Serializable>(
   val request: Request,
+  val session: S,
   val data: T,
 ) : HttpHandler {
   private val partials = mutableSetOf("page-data")
@@ -64,9 +65,15 @@ abstract class PartialsPage<T : Serializable>(
     }
 
     if (redirectUrl != null) {
-      exchange.responseHeaders.put(Headers.CONTENT_TYPE, "plain/html")
-      exchange.responseSender.send("location: $redirectUrl")
-      exchange.endExchange()
+      if (isHtmxRequest(exchange)) {
+        exchange.responseHeaders.put(Headers.CONTENT_TYPE, "plain/html")
+        exchange.responseSender.send("location: $redirectUrl")
+        exchange.endExchange()
+      } else {
+        exchange.statusCode = 302
+        exchange.responseHeaders.put(Headers.LOCATION, redirectUrl)
+        exchange.endExchange()
+      }
     } else {
       exchange.responseHeaders.put(Headers.CONTENT_TYPE, "text/html")
       exchange.responseSender.send(generateContent(exchange))

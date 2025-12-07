@@ -11,9 +11,11 @@ import nl.astraeus.partials.web.Request
 
 class IndexPage(
   request: Request,
+  session: TestSession,
   data: NoData,
 ) : HeadPage<NoData>(
   request,
+  session,
   data,
 ) {
 

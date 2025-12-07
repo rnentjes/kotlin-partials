@@ -19,9 +19,11 @@ class DashboardData(
 
 class DashboardPage(
   request: Request,
+  session: TestSession,
   data: DashboardData,
 ) : HeadPage<DashboardData>(
   request,
+  session,
   data,
 ) {
   override var pageTitle: String = data.pageTitle
