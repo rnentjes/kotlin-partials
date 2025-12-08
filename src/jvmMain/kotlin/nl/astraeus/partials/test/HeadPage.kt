@@ -25,7 +25,7 @@ abstract class HeadPage<T : Serializable>(
       }
       link {
         rel = "stylesheet"
-        href = "/pico.fluid.classless.min.css"
+        href = "/static/pico.fluid.classless.min.css"
       }
     }
   }

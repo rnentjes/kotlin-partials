@@ -13,6 +13,7 @@ import io.undertow.server.session.SessionCookieConfig
 import io.undertow.server.session.SessionManager
 import nl.astraeus.partials.web.NotFoundPage
 import nl.astraeus.partials.web.RequestHandler
+import nl.astraeus.partials.web.StaticResourceHandler
 import java.io.Serializable
 import kotlin.reflect.KClass
 
@@ -22,12 +23,21 @@ fun <S : Serializable> createPartialsServer(
   vararg mapping: Pair<String, KClass<*>>,
   sessionManager: SessionManager = InMemorySessionManager("SESSION_MANAGER"),
   sessionConfig: SessionCookieConfig = SessionCookieConfig(),
+  resourceBasePath: String = "static",
+  resourceUrlPrefix: String = "/static",
 ): Undertow {
+
+  val resourceHandler = StaticResourceHandler(
+    resourceBasePath,
+    resourceUrlPrefix,
+  )
+
   val defaultPage = mapping.firstOrNull()?.second ?: NotFoundPage::class
   val sessionHandler = SessionAttachmentHandler(
     RequestHandler(
       defaultPage,
       session,
+      resourceHandler,
       *mapping
     ),
     sessionManager,

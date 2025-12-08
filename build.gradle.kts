@@ -1,6 +1,5 @@
 @file:OptIn(ExperimentalDistributionDsl::class)
 
-import org.jetbrains.kotlin.gradle.dsl.JsSourceMapEmbedMode
 import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
 
 plugins {
@@ -31,15 +30,17 @@ kotlin {
   jvm {
   }
   js {
+/*
     compilerOptions {
       target.set("es2015")
       sourceMap.set(true)
       sourceMapEmbedSources.set(JsSourceMapEmbedMode.SOURCE_MAP_SOURCE_CONTENT_ALWAYS)
     }
+*/
     binaries.library()
     browser {
       distribution {
-        outputDirectory.set(File("$projectDir/web/"))
+        outputDirectory.set(File("$projectDir/src/jvmMain/resources/partials"))
       }
     }
   }
@@ -84,6 +85,22 @@ tasks.withType<AbstractPublishToMaven> {
 
 signing {
   sign(publishing.publications)
+}
+
+tasks.named("jvmProcessResources") {
+  // Ensure JS artifacts are generated before processing JVM resources that include them
+  dependsOn(tasks.named("jsBrowserProductionLibraryDistribution"))
+  dependsOn(tasks.named("jsBrowserDevelopmentLibraryDistribution"))
+}
+
+tasks.named("jsBrowserDevelopmentLibraryDistribution") {
+  mustRunAfter(tasks.named("jsDevelopmentLibraryCompileSync"))
+  mustRunAfter(tasks.named("jsProductionLibraryCompileSync"))
+}
+
+tasks.named("jsBrowserProductionLibraryDistribution") {
+  mustRunAfter(tasks.named("jsDevelopmentLibraryCompileSync"))
+  mustRunAfter(tasks.named("jsProductionLibraryCompileSync"))
 }
 
 mavenPublishing {

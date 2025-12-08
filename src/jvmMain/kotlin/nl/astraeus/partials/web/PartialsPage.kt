@@ -36,6 +36,7 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
   val request: Request,
   val session: S,
   val data: T,
+  val staticBasePath: String = "/partials"
 ) : HttpHandler {
   private val partials = mutableSetOf("page-data")
 
@@ -103,11 +104,11 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
 
             renderDataInput(false)
             script {
-              src = "/kotlin-kotlin-stdlib.js"
+              src = "$staticBasePath/kotlin-kotlin-stdlib.js"
               type = "application/javascript"
             }
             script {
-              src = "/kotlin-partials.js"
+              src = "$staticBasePath/kotlin-partials.js"
               type = "application/javascript"
             }
           }

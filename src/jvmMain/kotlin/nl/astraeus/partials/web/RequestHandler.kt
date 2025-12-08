@@ -2,22 +2,16 @@ package nl.astraeus.partials.web
 
 import io.undertow.server.HttpHandler
 import io.undertow.server.HttpServerExchange
-import io.undertow.server.handlers.PathHandler
-import io.undertow.server.handlers.resource.PathResourceManager
-import io.undertow.server.handlers.resource.ResourceHandler
 import java.io.Serializable
-import java.nio.file.Paths
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 
 class RequestHandler<S : Serializable>(
   val defaultPage: KClass<*>,
   val session: () -> S,
+  val next: HttpHandler? = null,
   vararg val mappings: Pair<String, KClass<*>>
 ) : HttpHandler {
-  val resourceHandler = ResourceHandler(PathResourceManager(Paths.get("web")))
-  val pathHandler = PathHandler(resourceHandler)
-
   init {
     // todo: check mappings for types constructors and data class types
     // cache constructors
@@ -55,7 +49,7 @@ class RequestHandler<S : Serializable>(
 
       handler.handleRequest(exchange)
     } else {
-      pathHandler.handleRequest(exchange)
+      next?.handleRequest(exchange) ?: error("No handler found for path $path")
     }
   }
 
