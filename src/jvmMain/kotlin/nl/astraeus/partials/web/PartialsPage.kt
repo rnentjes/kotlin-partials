@@ -75,7 +75,7 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
         exchange.endExchange()
       }
     } else {
-      exchange.responseHeaders.put(Headers.CONTENT_TYPE, "text/html")
+      exchange.responseHeaders.put(Headers.CONTENT_TYPE, "text/html; charset=UTF-8")
       exchange.responseSender.send(generateContent(exchange))
     }
   }
