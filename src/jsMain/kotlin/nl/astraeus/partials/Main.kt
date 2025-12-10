@@ -2,10 +2,7 @@ package nl.astraeus.partials
 
 import kotlinx.browser.document
 import kotlinx.browser.window
-import org.w3c.dom.Element
-import org.w3c.dom.HTMLFormElement
-import org.w3c.dom.HTMLInputElement
-import org.w3c.dom.HTMLTextAreaElement
+import org.w3c.dom.*
 import org.w3c.dom.url.URLSearchParams
 import org.w3c.xhr.FormData
 import org.w3c.xhr.XMLHttpRequest
@@ -123,6 +120,19 @@ private fun handleServerResponse(xhr: XMLHttpRequest) {
               document.getElementById(id)?.let { elementToUpdate ->
                 updateHtml(elementToUpdate)
               }
+            }
+          }
+
+          // Execute embedded scripts
+          val scripts = div.querySelectorAll("script")
+          for (index in 0..<scripts.length) {
+            (scripts.item(index) as? HTMLScriptElement)?.also { oldScript ->
+              val newScript: HTMLScriptElement = document.createElement("script") as HTMLScriptElement
+              newScript.textContent = oldScript.textContent
+              newScript.src = oldScript.src
+              newScript.defer = oldScript.defer
+              newScript.type = oldScript.type
+              document.body?.appendChild(newScript)
             }
           }
         } else {

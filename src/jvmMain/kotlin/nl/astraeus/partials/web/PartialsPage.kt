@@ -104,12 +104,8 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
 
             renderDataInput(false)
             script {
-              src = "$staticBasePath/kotlin-kotlin-stdlib.js"
-              type = "application/javascript"
-            }
-            script {
-              src = "$staticBasePath/kotlin-partials.js"
-              type = "application/javascript"
+              src = "$staticBasePath/kotlin-partials.mjs"
+              type = "module"
             }
           }
         }

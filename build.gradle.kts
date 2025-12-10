@@ -1,5 +1,6 @@
 @file:OptIn(ExperimentalDistributionDsl::class)
 
+import org.jetbrains.kotlin.gradle.dsl.JsSourceMapEmbedMode
 import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
 
 plugins {
@@ -30,13 +31,11 @@ kotlin {
   jvm {
   }
   js {
-/*
     compilerOptions {
       target.set("es2015")
       sourceMap.set(true)
       sourceMapEmbedSources.set(JsSourceMapEmbedMode.SOURCE_MAP_SOURCE_CONTENT_ALWAYS)
     }
-*/
     binaries.library()
     browser {
       distribution {
