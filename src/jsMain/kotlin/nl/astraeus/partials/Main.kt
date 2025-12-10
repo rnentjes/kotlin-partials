@@ -109,6 +109,21 @@ private fun handleServerResponse(xhr: XMLHttpRequest) {
         div.innerHTML = xhr.responseText
 
         if (div.children.length == 1) {
+          // Execute embedded scripts
+          val scripts = div.querySelectorAll("script")
+          val newScripts = mutableListOf<HTMLScriptElement>()
+          for (index in 0..<scripts.length) {
+            (scripts.item(index) as? HTMLScriptElement)?.also { oldScript ->
+              if (oldScript.src.isBlank() && oldScript.textContent?.isNotBlank() == true) {
+                val newScript: HTMLScriptElement = document.createElement("script") as HTMLScriptElement
+                newScript.textContent = oldScript.textContent
+                newScript.defer = oldScript.defer
+                newScript.type = oldScript.type
+                newScripts.add(newScript)
+              }
+            }
+          }
+
           val children = div.children.item(0)?.children
           while ((children?.length ?: 0) > 0) {
             val child = children?.item(0)
@@ -123,17 +138,8 @@ private fun handleServerResponse(xhr: XMLHttpRequest) {
             }
           }
 
-          // Execute embedded scripts
-          val scripts = div.querySelectorAll("script")
-          for (index in 0..<scripts.length) {
-            (scripts.item(index) as? HTMLScriptElement)?.also { oldScript ->
-              val newScript: HTMLScriptElement = document.createElement("script") as HTMLScriptElement
-              newScript.textContent = oldScript.textContent
-              newScript.src = oldScript.src
-              newScript.defer = oldScript.defer
-              newScript.type = oldScript.type
-              document.body?.appendChild(newScript)
-            }
+          for (script in newScripts) {
+            document.body?.appendChild(script)
           }
         } else {
           console.error("Received html does not contain exactly one root element.", xhr)
