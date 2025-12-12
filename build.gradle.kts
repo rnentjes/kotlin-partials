@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "nl.astraeus"
-version = "1.0.5-SNAPSHOT"
+version = "1.0.5"
 
 repositories {
   mavenCentral()
@@ -28,8 +28,7 @@ repositories {
 }
 
 kotlin {
-  jvm {
-  }
+  jvm {}
   js {
     compilerOptions {
       target.set("es2015")
