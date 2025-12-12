@@ -2,6 +2,7 @@ package nl.astraeus.partials.web
 
 import io.undertow.server.HttpHandler
 import io.undertow.server.HttpServerExchange
+import io.undertow.util.HttpString
 import java.io.Serializable
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
@@ -31,6 +32,10 @@ class RequestHandler<S : Serializable>(
     }
 
     if (clazz != null) {
+      if (exchange.requestMethod == HttpString("POST") && exchange.isInIoThread) {
+        exchange.dispatch(this)
+        return
+      }
       val request = exchange.request()
       var session = exchange.getPartialsSession<S>()
       if (session == null) {

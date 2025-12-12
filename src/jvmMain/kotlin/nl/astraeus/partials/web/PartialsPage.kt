@@ -49,35 +49,20 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
   }
 
   override fun handleRequest(exchange: HttpServerExchange) {
-    val method = exchange.requestMethod.toString()
-
-    val redirectUrl = when (method) {
-      "POST" -> {
-        if (exchange.isInIoThread) {
-          exchange.dispatch(this)
-          return
-        }
-        exchange.startBlocking() // Enable reading POST data
-        process()
-      }
-
-      "GET" -> process()
-      else -> null
-    }
+    val redirectUrl = process()
 
     if (redirectUrl != null) {
-      if (isHtmxRequest(exchange)) {
+      if (isPartialsRequest(exchange)) {
         exchange.responseHeaders.put(Headers.CONTENT_TYPE, "plain/html")
         exchange.responseSender.send("location: $redirectUrl")
-        exchange.endExchange()
       } else {
         exchange.statusCode = 302
         exchange.responseHeaders.put(Headers.LOCATION, redirectUrl)
-        exchange.endExchange()
       }
     } else {
       exchange.responseHeaders.put(Headers.CONTENT_TYPE, "text/html; charset=UTF-8")
-      exchange.responseSender.send(generateContent(exchange))
+      val content = generateContent(exchange)
+      exchange.responseSender.send(content)
     }
   }
 
@@ -140,12 +125,12 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
 
   fun HTMLTag.onKeyUp(vararg parameters: Pair<String, String>) = doPost("keyup", *parameters)
 
-  protected fun isHtmxRequest(exchange: HttpServerExchange): Boolean {
-    return exchange.requestHeaders.getFirst("XX-Request") == "true"
+  protected fun isPartialsRequest(exchange: HttpServerExchange): Boolean {
+    return exchange.requestHeaders.getFirst(PARTIALS_REQUEST_HEADER) == "true"
   }
 
   fun generateContent(exchange: HttpServerExchange): ByteBuffer {
-    val bldr = if (isHtmxRequest(exchange)) {
+    val bldr = if (isPartialsRequest(exchange)) {
       PartialsBuilder(partials, prettyPrint = true, xhtmlCompatible = true)
     } else {
       HtmlBuilder(prettyPrint = true, xhtmlCompatible = true)
@@ -156,7 +141,7 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
 
     val result = consumer.finalize()
 
-    if (isHtmxRequest(exchange)) {
+    if (isPartialsRequest(exchange)) {
       val concat = StringBuilder("<div>\n")
       concat.append(result)
       concat.append("\n</div>")

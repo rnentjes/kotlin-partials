@@ -163,13 +163,9 @@ class PartialsBuilder(
     level++
 
     val id = tag.attributes["id"]
-    if (id != null && partials.contains(id)) {
-      if (outputting) {
-        error("Id $id want to be replaced but is child of already replaced parent with id: $outputtingId")
-      } else {
-        outputting = true
-        outputtingId = id
-      }
+    if (id != null && partials.contains(id) && !outputting) {
+      outputting = true
+      outputtingId = id
     }
 
     if (outputting) {

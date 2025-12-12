@@ -2,6 +2,7 @@ package nl.astraeus.partials
 
 import kotlinx.browser.document
 import kotlinx.browser.window
+import nl.astraeus.partials.web.PARTIALS_REQUEST_HEADER
 import org.w3c.dom.*
 import org.w3c.dom.url.URLSearchParams
 import org.w3c.xhr.FormData
@@ -81,7 +82,7 @@ private fun addEventToXXElement(element: Element, eventName: String) {
     val xhr = XMLHttpRequest()
     xhr.open("POST", window.location.href, true)
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded")
-    xhr.setRequestHeader("XX-Request", "true")
+    xhr.setRequestHeader(PARTIALS_REQUEST_HEADER, "true")
 
     xhr.onload = {
       handleServerResponse(xhr)
@@ -114,13 +115,15 @@ private fun handleServerResponse(xhr: XMLHttpRequest) {
           val newScripts = mutableListOf<HTMLScriptElement>()
           for (index in 0..<scripts.length) {
             (scripts.item(index) as? HTMLScriptElement)?.also { oldScript ->
+              val newScript: HTMLScriptElement = document.createElement("script") as HTMLScriptElement
               if (oldScript.src.isBlank() && oldScript.textContent?.isNotBlank() == true) {
-                val newScript: HTMLScriptElement = document.createElement("script") as HTMLScriptElement
                 newScript.textContent = oldScript.textContent
-                newScript.defer = oldScript.defer
-                newScript.type = oldScript.type
-                newScripts.add(newScript)
+              } else {
+                newScript.src = oldScript.src
               }
+              newScript.defer = oldScript.defer
+              newScript.type = oldScript.type
+              newScripts.add(newScript)
             }
           }
 
@@ -130,10 +133,15 @@ private fun handleServerResponse(xhr: XMLHttpRequest) {
             if (child != null) {
               val id = child.id
               val elementToReplace = document.getElementById(child.id)
-              elementToReplace?.replaceWith(child)
+              if (elementToReplace != null) {
+                elementToReplace.replaceWith(child)
 
-              document.getElementById(id)?.let { elementToUpdate ->
-                updateHtml(elementToUpdate)
+                document.getElementById(id)?.let { elementToUpdate ->
+                  updateHtml(elementToUpdate)
+                }
+              } else {
+                console.warn("Could not find element in the DOM to replace with id $id")
+                child.remove()
               }
             }
           }
