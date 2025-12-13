@@ -8,6 +8,7 @@ import kotlinx.html.h1
 import nl.astraeus.partials.web.Builder
 import nl.astraeus.partials.web.NoData
 import nl.astraeus.partials.web.Request
+import nl.astraeus.partials.web.onClick
 
 class IndexPage(
   request: Request,

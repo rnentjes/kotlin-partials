@@ -4,6 +4,8 @@ import io.undertow.server.HttpServerExchange
 import kotlinx.html.*
 import nl.astraeus.partials.web.Builder
 import nl.astraeus.partials.web.Request
+import nl.astraeus.partials.web.onChange
+import nl.astraeus.partials.web.onClick
 import java.io.Serializable
 
 class DashboardData(

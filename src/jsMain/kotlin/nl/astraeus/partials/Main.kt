@@ -35,14 +35,14 @@ fun updateHtml(element: Element) {
 
   for ((attribute, eventName) in attributeMap) {
     if (element.getAttribute(attribute) != null) {
-      addEventToXXElement(element, eventName)
+      addEventToPartialsElement(element, eventName)
     }
 
     val list = element.querySelectorAll("[${attribute}]") ?: return
 
     for (index in 0..<list.length) {
       val element = list.item(index) as Element
-      addEventToXXElement(element, eventName)
+      addEventToPartialsElement(element, eventName)
     }
   }
   activeElement?.id?.also { id ->
@@ -65,7 +65,7 @@ fun updateHtml(element: Element) {
   }
 }
 
-private fun addEventToXXElement(element: Element, eventName: String) {
+private fun addEventToPartialsElement(element: Element, eventName: String) {
   element.addEventListener(eventName, {
     showSplash()
     activeElement = document.activeElement

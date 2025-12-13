@@ -30,6 +30,27 @@ fun <D : Serializable> D.encode(): String {
   return Base64.encode(bytes)
 }
 
+private fun HTMLTag.doPost(
+  eventName: String,
+  vararg parameters: Pair<String, String>
+) {
+  this.attributes["data-p-${eventName}"] = parameters.joinToString("&") { pair ->
+    "${pair.first}=${pair.second}"
+  }
+}
+
+fun HTMLTag.onClick(vararg parameters: Pair<String, String>) = doPost("click", *parameters)
+
+fun HTMLTag.onChange(vararg parameters: Pair<String, String>) = doPost("change", *parameters)
+
+fun HTMLTag.onBlur(vararg parameters: Pair<String, String>) = doPost("blur", *parameters)
+
+fun HTMLTag.onKeyUp(vararg parameters: Pair<String, String>) = doPost("keyup", *parameters)
+
+fun HttpServerExchange.isPartialsRequest(): Boolean {
+  return requestHeaders.getFirst(PARTIALS_REQUEST_HEADER) == "true"
+}
+
 class NoData : Serializable
 
 abstract class PartialsPage<S : Serializable, T : Serializable>(
@@ -52,7 +73,7 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
     val redirectUrl = process()
 
     if (redirectUrl != null) {
-      if (isPartialsRequest(exchange)) {
+      if (exchange.isPartialsRequest()) {
         exchange.responseHeaders.put(Headers.CONTENT_TYPE, "plain/html")
         exchange.responseSender.send("location: $redirectUrl")
       } else {
@@ -108,29 +129,8 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
     }
   }
 
-  fun HTMLTag.doPost(
-    eventName: String,
-    vararg parameters: Pair<String, String>
-  ) {
-    this.attributes["data-p-${eventName}"] = parameters.joinToString("&") { pair ->
-      "${pair.first}=${pair.second}"
-    }
-  }
-
-  fun HTMLTag.onClick(vararg parameters: Pair<String, String>) = doPost("click", *parameters)
-
-  fun HTMLTag.onChange(vararg parameters: Pair<String, String>) = doPost("change", *parameters)
-
-  fun HTMLTag.onBlur(vararg parameters: Pair<String, String>) = doPost("blur", *parameters)
-
-  fun HTMLTag.onKeyUp(vararg parameters: Pair<String, String>) = doPost("keyup", *parameters)
-
-  protected fun isPartialsRequest(exchange: HttpServerExchange): Boolean {
-    return exchange.requestHeaders.getFirst(PARTIALS_REQUEST_HEADER) == "true"
-  }
-
   fun generateContent(exchange: HttpServerExchange): ByteBuffer {
-    val bldr = if (isPartialsRequest(exchange)) {
+    val bldr = if (exchange.isPartialsRequest()) {
       PartialsBuilder(partials, prettyPrint = true, xhtmlCompatible = true)
     } else {
       HtmlBuilder(prettyPrint = true, xhtmlCompatible = true)
@@ -141,7 +141,7 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
 
     val result = consumer.finalize()
 
-    if (isPartialsRequest(exchange)) {
+    if (exchange.isPartialsRequest()) {
       val concat = StringBuilder("<div>\n")
       concat.append(result)
       concat.append("\n</div>")
