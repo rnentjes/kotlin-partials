@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "nl.astraeus"
-version = "1.0.7-SNAPSHOT"
+version = "1.0.7"
 
 repositories {
   mavenCentral()
@@ -49,8 +49,8 @@ kotlin {
       dependencies {
         implementation("org.jetbrains.kotlin:kotlin-reflect:2.2.21")
 
-        implementation("io.undertow:undertow-core:2.3.19.Final")
-        implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.12.0")
+        api("io.undertow:undertow-core:2.3.19.Final")
+        api("org.jetbrains.kotlinx:kotlinx-html-jvm:0.12.0")
       }
     }
     val jvmTest by getting

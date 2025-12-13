@@ -41,6 +41,8 @@ private fun HTMLTag.doPost(
 
 fun HTMLTag.onClick(vararg parameters: Pair<String, String>) = doPost("click", *parameters)
 
+fun HTMLTag.onSubmit(vararg parameters: Pair<String, String>) = doPost("submit", *parameters)
+
 fun HTMLTag.onChange(vararg parameters: Pair<String, String>) = doPost("change", *parameters)
 
 fun HTMLTag.onBlur(vararg parameters: Pair<String, String>) = doPost("blur", *parameters)

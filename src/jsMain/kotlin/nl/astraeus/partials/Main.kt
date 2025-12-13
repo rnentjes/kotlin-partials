@@ -17,6 +17,7 @@ val attributeMap = mapOf(
   "data-p-blur" to "blur",
   "data-p-change" to "change",
   "data-p-keyup" to "keyup",
+  "data-p-submit" to "submit",
 )
 
 var activeElement: Element? = null
