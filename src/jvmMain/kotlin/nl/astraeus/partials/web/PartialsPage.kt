@@ -142,14 +142,17 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
     consumer.render(exchange)
 
     val result = consumer.finalize()
+    val concat = StringBuilder()
 
     if (exchange.isPartialsRequest()) {
-      val concat = StringBuilder("<div>\n")
+      concat.append("<div>\n")
       concat.append(result)
       concat.append("\n</div>")
-      return ByteBuffer.wrap(concat.toString().toByteArray(Charsets.UTF_8))
     } else {
-      return ByteBuffer.wrap(result.toByteArray(Charsets.UTF_8))
+      concat.append("<!DOCTYPE html>\n")
+      concat.append(result)
     }
+
+    return ByteBuffer.wrap(concat.toString().toByteArray(Charsets.UTF_8))
   }
 }
