@@ -5,6 +5,9 @@ import io.undertow.server.HttpServerExchange
 import io.undertow.util.Headers
 import io.undertow.util.StatusCodes
 import java.nio.ByteBuffer
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * HTTP handler that serves static files from classpath resources.
@@ -53,6 +56,22 @@ class StaticResourceHandler(
       exchange.endExchange()
       return
     }
+
+    exchange.responseHeaders.put(
+      Headers.CACHE_CONTROL,
+      "max-age=86400"
+    )
+
+    val expirationTime = ZonedDateTime.now(ZoneOffset.UTC).plusHours(24)
+
+    // Format the expiration time for the Expires header
+    val formatter = DateTimeFormatter.RFC_1123_DATE_TIME
+    val formattedExpirationTime = expirationTime.format(formatter)
+
+    exchange.responseHeaders.put(
+      Headers.EXPIRES,
+      formattedExpirationTime
+    )
 
     // Set content type based on file extension
     exchange.responseHeaders.put(Headers.CONTENT_TYPE, contentType)
