@@ -72,6 +72,15 @@ class StaticResourceHandler(
       path.endsWith(".html") -> "text/html"
       path.endsWith(".json") -> "application/json"
       path.endsWith(".mjs") -> "application/javascript"
+      path.endsWith(".svg") -> "image/svg+xml"
+      path.endsWith(".jpg") -> "image/jpeg"
+      path.endsWith(".jpeg") -> "image/jpeg"
+      path.endsWith(".jiff") -> "image/jpeg"
+      path.endsWith(".png") -> "image/png"
+      path.endsWith(".gif") -> "image/gif"
+      path.endsWith(".webp") -> "image/webp"
+      path.endsWith(".bmp") -> "image/bmp"
+      path.endsWith(".ico") -> "image/x-icon"
       else -> "application/octet-stream"
     }
   }

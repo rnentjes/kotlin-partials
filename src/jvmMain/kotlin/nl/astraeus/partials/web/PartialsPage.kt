@@ -67,8 +67,8 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
     return null
   }
 
-  fun refresh(partial: String) {
-    partials.add(partial)
+  fun refresh(vararg parts: String) {
+    partials.addAll(parts)
   }
 
   override fun handleRequest(exchange: HttpServerExchange) {
