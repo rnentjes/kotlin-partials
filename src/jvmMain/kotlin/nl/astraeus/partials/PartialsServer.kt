@@ -59,7 +59,7 @@ fun <S : PartialsSession> createPartialsServer(
   val server = Undertow.builder()
     .addHttpListener(port, "localhost")
     .setHandler(canonicalPathHandler)
-    .setServerOption(UndertowOptions.IDLE_TIMEOUT, 15000)
+    .setServerOption(UndertowOptions.IDLE_TIMEOUT, 30000)
     .setServerOption(UndertowOptions.SHUTDOWN_TIMEOUT, 1000)
     .build()
 

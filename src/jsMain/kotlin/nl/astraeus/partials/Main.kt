@@ -20,13 +20,16 @@ fun main() {
         PartialsHandler.handleHtmlResponse(it)
       }
     }
-
-    eventSource.onerror = { me ->
-      console.log("✗ EventSource error:", me)
-      console.log("✗ Ready state:", eventSource.readyState) // 0=CONNECTING, 1=OPEN, 2=CLOSED
-      console.log("✗ Event type:", me.type)
-      eventSource.close();
-    }
-
   }
+
+  eventSource.onerror = { me ->
+    console.log("✗ EventSource error:", me)
+    console.log("✗ Ready state:", eventSource.readyState) // 0=CONNECTING, 1=OPEN, 2=CLOSED
+    console.log("✗ Event type:", me.type)
+    eventSource.close();
+  }
+
+  window.addEventListener("beforeunload", { event ->
+    eventSource.close()
+  })
 }
