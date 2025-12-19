@@ -3,6 +3,7 @@ package nl.astraeus.partials.web
 import io.undertow.server.HttpHandler
 import io.undertow.server.HttpServerExchange
 import io.undertow.util.HttpString
+import nl.astraeus.partials.web.PartialsConnections.partialConnections
 import java.nio.ByteBuffer
 
 class PartialsSSEHandler(

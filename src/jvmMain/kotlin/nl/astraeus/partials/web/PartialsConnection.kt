@@ -5,12 +5,12 @@ import io.undertow.server.HttpServerExchange
 import kotlinx.html.HtmlBlockTag
 import kotlinx.html.consumers.DelayedConsumer
 import kotlinx.html.div
+import nl.astraeus.partials.web.PartialsConnections.partialConnections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
-val partialConnections = ConcurrentHashMap<String, PartialsConnection>()
 
 class PartialsConnection(
   val id: String,
@@ -51,4 +51,8 @@ class PartialsConnection(
       sendPartials(result)
     }
   }
+}
+
+object PartialsConnections {
+  val partialConnections = ConcurrentHashMap<String, PartialsConnection>()
 }

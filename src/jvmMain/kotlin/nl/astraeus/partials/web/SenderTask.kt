@@ -3,6 +3,7 @@ package nl.astraeus.partials.web
 import io.undertow.io.IoCallback
 import io.undertow.io.Sender
 import io.undertow.server.HttpServerExchange
+import nl.astraeus.partials.web.PartialsConnections.partialConnections
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicBoolean
