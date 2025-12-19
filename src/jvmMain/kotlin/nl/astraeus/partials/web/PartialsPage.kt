@@ -53,7 +53,11 @@ fun HttpServerExchange.isPartialsRequest(): Boolean {
   return requestHeaders.getFirst(PARTIALS_REQUEST_HEADER) == "true"
 }
 
-class NoData : Serializable
+abstract class PartialsSession : Serializable {
+  val id = System.currentTimeMillis().toString() + System.nanoTime().toString()
+}
+
+class NoData : PartialsSession()
 
 abstract class PartialsPage<S : Serializable, T : Serializable>(
   val request: Request,

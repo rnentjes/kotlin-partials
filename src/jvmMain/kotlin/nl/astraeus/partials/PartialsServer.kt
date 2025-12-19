@@ -12,12 +12,12 @@ import io.undertow.server.session.SessionAttachmentHandler
 import io.undertow.server.session.SessionCookieConfig
 import io.undertow.server.session.SessionManager
 import nl.astraeus.partials.web.NotFoundPage
+import nl.astraeus.partials.web.PartialsSession
 import nl.astraeus.partials.web.RequestHandler
 import nl.astraeus.partials.web.StaticResourceHandler
-import java.io.Serializable
 import kotlin.reflect.KClass
 
-fun <S : Serializable> createPartialsServer(
+fun <S : PartialsSession> createPartialsServer(
   port: Int = 8080,
   session: () -> S,
   vararg mapping: Pair<String, KClass<*>>,
@@ -58,8 +58,8 @@ fun <S : Serializable> createPartialsServer(
 
   val server = Undertow.builder()
     .addHttpListener(port, "localhost")
-    .setIoThreads(4)
     .setHandler(canonicalPathHandler)
+    .setServerOption(UndertowOptions.IDLE_TIMEOUT, 15000)
     .setServerOption(UndertowOptions.SHUTDOWN_TIMEOUT, 1000)
     .build()
 

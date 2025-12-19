@@ -1,14 +1,12 @@
 package nl.astraeus.partials.test
 
 import io.undertow.server.HttpServerExchange
-import kotlinx.html.a
-import kotlinx.html.br
-import kotlinx.html.div
-import kotlinx.html.h1
+import kotlinx.html.*
 import nl.astraeus.partials.web.Builder
 import nl.astraeus.partials.web.NoData
 import nl.astraeus.partials.web.Request
 import nl.astraeus.partials.web.onClick
+import java.util.*
 
 class IndexPage(
   request: Request,
@@ -43,7 +41,17 @@ class IndexPage(
         href = "/dashboard"
         +"Dashboard"
       }
+      hr()
+      renderTimePartial()
     }
   }
 
+}
+
+fun HtmlBlockTag.renderTimePartial() {
+  div {
+    id = "show-timer"
+
+    +"The time is ${Date()}"
+  }
 }

@@ -3,11 +3,10 @@ package nl.astraeus.partials.web
 import io.undertow.server.HttpHandler
 import io.undertow.server.HttpServerExchange
 import io.undertow.util.HttpString
-import java.io.Serializable
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 
-class RequestHandler<S : Serializable>(
+class RequestHandler<S : PartialsSession>(
   val defaultPage: KClass<*>,
   val session: () -> S,
   val next: HttpHandler? = null,
@@ -20,6 +19,20 @@ class RequestHandler<S : Serializable>(
 
   override fun handleRequest(exchange: HttpServerExchange) {
     val path = exchange.relativePath
+
+    val request = exchange.request()
+    var session = exchange.getPartialsSession<S>()
+    if (session == null) {
+      session = session()
+      exchange.setPartialsSession(session)
+    }
+
+    if (path == "/partials-sse") {
+      val handler = PartialsSSEHandler(request)
+      handler.handleRequest(exchange)
+      return
+    }
+
     var clazz: KClass<*>? = null
     if (path == "/") {
       clazz = defaultPage
@@ -36,12 +49,7 @@ class RequestHandler<S : Serializable>(
         exchange.dispatch(this)
         return
       }
-      val request = exchange.request()
-      var session = exchange.getPartialsSession<S>()
-      if (session == null) {
-        session = session()
-        exchange.setPartialsSession(session)
-      }
+
       val constructor = getConstructor(clazz)
       val dataType = constructor.parameters[2].type.classifier as KClass<*>
       val data = if (request.pageData == null) {

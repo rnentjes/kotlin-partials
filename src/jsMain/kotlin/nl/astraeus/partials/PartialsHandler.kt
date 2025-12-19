@@ -2,6 +2,7 @@ package nl.astraeus.partials
 
 import kotlinx.browser.document
 import kotlinx.browser.window
+import nl.astraeus.partials.web.PARTIALS_CONNECTION_ID_HEADER
 import nl.astraeus.partials.web.PARTIALS_REQUEST_HEADER
 import org.w3c.dom.*
 import org.w3c.dom.url.URLSearchParams
@@ -18,6 +19,8 @@ object PartialsHandler {
   )
 
   private var activeElement: Element? = null
+
+  val connectionId: String = generateToken()
 
   fun updateHtml(element: Element) {
     var inputSelectionStart = -1
@@ -82,6 +85,7 @@ object PartialsHandler {
       xhr.open("POST", window.location.href, true)
       xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded")
       xhr.setRequestHeader(PARTIALS_REQUEST_HEADER, "true")
+      xhr.setRequestHeader(PARTIALS_CONNECTION_ID_HEADER, connectionId)
 
       xhr.onload = {
         handleServerResponse(xhr)
@@ -105,24 +109,28 @@ object PartialsHandler {
           val location = response.substringAfter("location: ")
           window.location.href = location
         } else {
-          val div = document.createElement("div")
-          div.innerHTML = xhr.responseText
-
-          if (div.children.length == 1) {
-            val newScripts = extractScripts(div)
-
-            replaceElements(div)
-
-            for (script in newScripts) {
-              document.body?.appendChild(script)
-            }
-          } else {
-            console.error("Received html does not contain exactly one root element.", xhr)
-          }
+          handleHtmlResponse(xhr.responseText)
         }
       }
     } else {
       console.error("Error: ${xhr.status}", xhr)
+    }
+  }
+
+  fun handleHtmlResponse(html: String) {
+    val div = document.createElement("div")
+    div.innerHTML = html
+
+    if (div.children.length == 1) {
+      val newScripts = extractScripts(div)
+
+      replaceElements(div)
+
+      for (script in newScripts) {
+        document.body?.appendChild(script)
+      }
+    } else {
+      console.error("Received html does not contain exactly one root element.", html)
     }
   }
 

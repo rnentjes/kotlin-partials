@@ -18,12 +18,20 @@ fun HttpServerExchange.getSession(): Session {
   return session
 }
 
+val PARTIALS_SESSION_ID = "partials-session"
+
 fun <S : Serializable> HttpServerExchange.getPartialsSession(): S? {
-  val session = getSession()
-  return session.getAttribute("partials-session") as S?
+  return getSession().getPartialsSession()
 }
 
 fun <S : Serializable> HttpServerExchange.setPartialsSession(session: S) {
-  val httpSession = getSession()
-  httpSession.setAttribute("partials-session", session)
+  getSession().setPartialsSession(session)
+}
+
+fun <S : Serializable> Session.getPartialsSession(): S? {
+  return this.getAttribute(PARTIALS_SESSION_ID) as S?
+}
+
+fun <S : Serializable> Session.setPartialsSession(session: S) {
+  this.setAttribute(PARTIALS_SESSION_ID, session)
 }
