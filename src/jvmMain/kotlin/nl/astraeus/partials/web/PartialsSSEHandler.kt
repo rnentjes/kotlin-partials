@@ -3,7 +3,6 @@ package nl.astraeus.partials.web
 import io.undertow.server.HttpHandler
 import io.undertow.server.HttpServerExchange
 import io.undertow.util.HttpString
-import nl.astraeus.partials.web.PartialsConnections.partialConnections
 import java.nio.ByteBuffer
 
 class PartialsSSEHandler(
@@ -46,9 +45,4 @@ class PartialsSSEHandler(
       )
     })
   }
-}
-
-fun HttpServerExchange.getPartialsSSEConnection(): PartialsConnection? {
-  val connectionId = requestHeaders.getFirst(PARTIALS_CONNECTION_ID_HEADER) ?: return null
-  return partialConnections[connectionId]
 }

@@ -65,7 +65,14 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
   val data: T,
   val staticBasePath: String = "/partials"
 ) : HttpHandler {
+  val connectionId = if (request.exchange.isPartialsRequest()) {
+    request.get(PARTIALS_CONNECTION_ID_HEADER) ?: error("No connection id found in partials request!")
+  } else {
+    generateToken()
+  }
   private val partials = mutableSetOf("page-data")
+
+  fun getPartialsConnection() = PartialsConnections.partialConnections[connectionId]
 
   open fun process(): String? {
     return null
@@ -115,6 +122,12 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
             this@render.content(exchange)
 
             renderDataInput(false)
+            input {
+              type = InputType.hidden
+              id = PARTIALS_CONNECTION_ID_HEADER
+              name = PARTIALS_CONNECTION_ID_HEADER
+              value = connectionId
+            }
             script {
               src = "$staticBasePath/kotlin-partials.mjs"
               type = "module"

@@ -2,7 +2,6 @@ package nl.astraeus.partials
 
 import kotlinx.browser.document
 import kotlinx.browser.window
-import nl.astraeus.partials.web.PARTIALS_CONNECTION_ID_HEADER
 import nl.astraeus.partials.web.PARTIALS_REQUEST_HEADER
 import org.w3c.dom.*
 import org.w3c.dom.url.URLSearchParams
@@ -19,8 +18,6 @@ object PartialsHandler {
   )
 
   private var activeElement: Element? = null
-
-  val connectionId: String = generateToken()
 
   fun updateHtml(element: Element) {
     var inputSelectionStart = -1
@@ -85,7 +82,6 @@ object PartialsHandler {
       xhr.open("POST", window.location.href, true)
       xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded")
       xhr.setRequestHeader(PARTIALS_REQUEST_HEADER, "true")
-      xhr.setRequestHeader(PARTIALS_CONNECTION_ID_HEADER, connectionId)
 
       xhr.onload = {
         handleServerResponse(xhr)

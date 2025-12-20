@@ -32,31 +32,32 @@ object SenderTask : Runnable {
         partialConnections.values.forEach {
           if (!it.isOpen.get()) {
             partialConnections.remove(it.id)
-          }
+          } else {
 
-          try {
-            val event = it.eventQueue.poll()
+            try {
+              val event = it.eventQueue.poll()
 
-            if (event != null) {
-              val msg = event.replace("\n", "")
-              val payload = ByteBuffer.wrap("id: ${it.eventId.incrementAndGet()}\ndata: $msg\n\n".toByteArray())
-              it.lastSendTime = System.currentTimeMillis()
-              it.sender.send(payload, NoOpEventCallback(it))
-              moreEvents = true
-            } else if (it.lastSendTime + 10000 < System.currentTimeMillis()) {
-              // Send keep-alive
-              val keepAlive = ByteBuffer.wrap(": keep-alive\n\n".toByteArray())
-              it.lastSendTime = System.currentTimeMillis()
-              it.sender.send(keepAlive, NoOpEventCallback(it))
+              if (event != null) {
+                val msg = event.replace("\n", "")
+                val payload = ByteBuffer.wrap("id: ${it.eventId.incrementAndGet()}\ndata: $msg\n\n".toByteArray())
+                it.lastSendTime = System.currentTimeMillis()
+                it.sender.send(payload, NoOpEventCallback(it))
+                moreEvents = true
+              } else if (it.lastSendTime + 10000 < System.currentTimeMillis()) {
+                // Send keep-alive
+                val keepAlive = ByteBuffer.wrap(": keep-alive\n\n".toByteArray())
+                it.lastSendTime = System.currentTimeMillis()
+                it.sender.send(keepAlive, NoOpEventCallback(it))
+              }
+            } catch (e: Throwable) {
+              it.isOpen.set(false)
+              e.printStackTrace()
             }
-          } catch (e: Throwable) {
-            it.isOpen.set(false)
-            e.printStackTrace()
           }
-        }
 
-        if (!moreEvents) {
-          Thread.sleep(10)
+          if (!moreEvents) {
+            Thread.sleep(10)
+          }
         }
       } catch (e: Throwable) {
         e.printStackTrace()
