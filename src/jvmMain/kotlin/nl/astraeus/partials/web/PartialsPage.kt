@@ -53,8 +53,7 @@ fun HTMLTag.onBlur(vararg parameters: Pair<String, String>) = doPost("blur", *pa
 fun HTMLTag.onKeyUp(vararg parameters: Pair<String, String>) = doPost("keyup", *parameters)
 
 fun INPUT.onEnter(vararg parameters: Pair<String, String>) {
-  attributes["onkeydown"] = "if (event.keyCode == 13) { event.preventDefault(); this.nextElementSibling.click(); }"
-  onSubmit(*parameters)
+  doPost("enter", *parameters)
 }
 
 fun HttpServerExchange.isPartialsRequest(): Boolean {

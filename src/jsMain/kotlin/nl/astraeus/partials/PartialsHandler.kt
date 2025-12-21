@@ -4,18 +4,20 @@ import kotlinx.browser.document
 import kotlinx.browser.window
 import nl.astraeus.partials.web.PARTIALS_REQUEST_HEADER
 import org.w3c.dom.*
+import org.w3c.dom.events.KeyboardEvent
 import org.w3c.dom.url.URLSearchParams
 import org.w3c.xhr.FormData
 import org.w3c.xhr.XMLHttpRequest
 
 object PartialsHandler {
-  private val attributeMap = mapOf(
-    "data-p-click" to "click",
-    "data-p-blur" to "blur",
-    "data-p-change" to "change",
-    "data-p-keyup" to "keyup",
-    "data-p-submit" to "submit",
-    "data-p-dblclick" to "dblclick",
+  private val attributeNames = listOf(
+    "click",
+    "blur",
+    "change",
+    "keyup",
+    "submit",
+    "dblclick",
+    "enter",
   )
 
   private var activeElement: Element? = null
@@ -32,12 +34,12 @@ object PartialsHandler {
       taSelectionStart = ae.selectionStart ?: -1
     }
 
-    for ((attribute, eventName) in attributeMap) {
-      if (element.getAttribute(attribute) != null) {
+    for (eventName in attributeNames) {
+      if (element.getAttribute("data-p-${eventName}") != null) {
         addEventToPartialsElement(element, eventName)
       }
 
-      val list = element.querySelectorAll("[${attribute}]") ?: return
+      val list = element.querySelectorAll("[data-p-${eventName}]") ?: return
 
       for (index in 0..<list.length) {
         val element = list.item(index) as Element
@@ -65,11 +67,25 @@ object PartialsHandler {
   }
 
   private fun addEventToPartialsElement(element: Element, eventName: String) {
-    element.addEventListener(eventName, {
-      activeElement = document.activeElement
+    when (eventName) {
+      "enter" -> element.addEventListener("keydown", { event ->
+        if (event is KeyboardEvent) {
+          if (event.key == "Enter") {
+            event.preventDefault()
 
-      sendPartialEvent(element.getAttribute("data-p-${eventName}") ?: "")
-    })
+            sendPartialEvent(element.getAttribute("data-p-${eventName}") ?: "")
+          }
+        }
+      })
+
+      else -> {
+        element.addEventListener(eventName, {
+          activeElement = document.activeElement
+
+          sendPartialEvent(element.getAttribute("data-p-${eventName}") ?: "")
+        })
+      }
+    }
   }
 
   fun sendPartialEvent(parameters: String = "") {
