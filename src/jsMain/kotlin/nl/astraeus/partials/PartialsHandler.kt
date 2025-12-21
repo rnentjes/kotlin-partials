@@ -15,6 +15,7 @@ object PartialsHandler {
     "data-p-change" to "change",
     "data-p-keyup" to "keyup",
     "data-p-submit" to "submit",
+    "data-p-dblclick" to "dblclick",
   )
 
   private var activeElement: Element? = null
