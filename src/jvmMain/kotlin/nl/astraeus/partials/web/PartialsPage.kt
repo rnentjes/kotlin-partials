@@ -10,6 +10,7 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
 import java.nio.ByteBuffer
+import java.time.ZoneId
 import kotlin.io.encoding.Base64
 
 typealias Builder = DelayedConsumer<String>
@@ -55,11 +56,12 @@ fun HttpServerExchange.isPartialsRequest(): Boolean {
 
 abstract class PartialsSession : Serializable {
   val id = System.currentTimeMillis().toString() + System.nanoTime().toString()
+  var timezone: ZoneId = ZoneId.systemDefault()
 }
 
 class NoData : PartialsSession()
 
-abstract class PartialsPage<S : Serializable, T : Serializable>(
+abstract class PartialsPage<S : PartialsSession, T : Serializable>(
   val request: Request,
   val session: S,
   val data: T,
@@ -70,6 +72,7 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
   } else {
     generateToken()
   }
+
   private val partials = mutableSetOf("page-data")
 
   fun getPartialsConnection() = PartialsConnections.partialConnections[connectionId]
@@ -83,6 +86,10 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
   }
 
   override fun handleRequest(exchange: HttpServerExchange) {
+    request.value(PARTIALS_TIMEZONE_ID) { id ->
+      session.timezone = ZoneId.of(id)
+    }
+
     val redirectUrl = process()
 
     if (redirectUrl != null) {
@@ -127,6 +134,12 @@ abstract class PartialsPage<S : Serializable, T : Serializable>(
               id = PARTIALS_CONNECTION_ID_HEADER
               name = PARTIALS_CONNECTION_ID_HEADER
               value = connectionId
+            }
+            input {
+              type = InputType.hidden
+              id = PARTIALS_TIMEZONE_ID
+              name = PARTIALS_TIMEZONE_ID
+              value = "0"
             }
             script {
               src = "$staticBasePath/kotlin-partials.mjs"

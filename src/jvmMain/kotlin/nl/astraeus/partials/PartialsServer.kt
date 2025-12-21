@@ -17,15 +17,19 @@ import nl.astraeus.partials.web.RequestHandler
 import nl.astraeus.partials.web.StaticResourceHandler
 import kotlin.reflect.KClass
 
+var partialsLogger: PartialsLogger = DefaultPartialsLogger()
+
 fun <S : PartialsSession> createPartialsServer(
   port: Int = 8080,
   session: () -> S,
   vararg mapping: Pair<String, KClass<*>>,
+  logger: PartialsLogger = DefaultPartialsLogger(),
   sessionManager: SessionManager = InMemorySessionManager("SESSION_MANAGER"),
   sessionConfig: SessionCookieConfig = SessionCookieConfig(),
   resourceBasePath: String = "static",
   resourceUrlPrefix: String = "/static",
 ): Undertow {
+  partialsLogger = logger
 
   val resourceHandler = StaticResourceHandler(
     resourceBasePath,

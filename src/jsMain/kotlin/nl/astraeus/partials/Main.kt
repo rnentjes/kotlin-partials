@@ -3,15 +3,20 @@ package nl.astraeus.partials
 import kotlinx.browser.document
 import kotlinx.browser.window
 import nl.astraeus.partials.web.PARTIALS_CONNECTION_ID_HEADER
+import nl.astraeus.partials.web.PARTIALS_TIMEZONE_ID
 import org.w3c.dom.EventSource
 import org.w3c.dom.HTMLInputElement
 
 fun main() {
-  window.onload = {
-    PartialsHandler.updateHtml(document.body!!)
+  val timezoneInput = document.getElementById(PARTIALS_TIMEZONE_ID) as? HTMLInputElement
+  timezoneInput?.value = js("Intl.DateTimeFormat().resolvedOptions().timeZone")
 
-    connectToEventSource()
-  }
+  PartialsHandler.updateHtml(document.body!!)
+
+  connectToEventSource()
+
+  // send timezone to server
+  PartialsHandler.sendPartialEvent()
 }
 
 private fun connectToEventSource() {

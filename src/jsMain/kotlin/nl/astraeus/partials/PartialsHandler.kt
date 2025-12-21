@@ -65,36 +65,43 @@ object PartialsHandler {
 
   private fun addEventToPartialsElement(element: Element, eventName: String) {
     element.addEventListener(eventName, {
-      showSplash()
       activeElement = document.activeElement
 
-      val form = document.getElementById("page-form") as? HTMLFormElement
-      val formData = if (form != null) {
-        FormData(form)
-      } else {
-        FormData()
-      }
-      val params = URLSearchParams(element.getAttribute("data-p-${eventName}") ?: "")
-
-      params.asDynamic().keys().forEach { key -> formData.append(key, params.get(key) ?: "") }
-
-      val xhr = XMLHttpRequest()
-      xhr.open("POST", window.location.href, true)
-      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded")
-      xhr.setRequestHeader(PARTIALS_REQUEST_HEADER, "true")
-
-      xhr.onload = {
-        handleServerResponse(xhr)
-        hideSplash()
-      }
-
-      xhr.onerror = {
-        console.error("Request failed", xhr)
-        hideSplash()
-      }
-
-      xhr.send(URLSearchParams(formData).toString())
+      sendPartialEvent(element.getAttribute("data-p-${eventName}") ?: "")
     })
+  }
+
+  fun sendPartialEvent(parameters: String = "") {
+    showSplash()
+
+    val form = document.getElementById("page-form") as? HTMLFormElement
+    val formData = if (form != null) {
+      FormData(form)
+    } else {
+      FormData()
+    }
+
+    if (parameters.isNotBlank()) {
+      val params = URLSearchParams(parameters)
+      params.asDynamic().keys().forEach { key -> formData.append(key, params.get(key) ?: "") }
+    }
+
+    val xhr = XMLHttpRequest()
+    xhr.open("POST", window.location.href, true)
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded")
+    xhr.setRequestHeader(PARTIALS_REQUEST_HEADER, "true")
+
+    xhr.onload = {
+      handleServerResponse(xhr)
+      hideSplash()
+    }
+
+    xhr.onerror = {
+      console.error("Request failed", xhr)
+      hideSplash()
+    }
+
+    xhr.send(URLSearchParams(formData).toString())
   }
 
   private fun handleServerResponse(xhr: XMLHttpRequest) {

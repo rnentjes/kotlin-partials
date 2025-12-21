@@ -11,7 +11,6 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
-
 class PartialsConnection(
   val id: String,
   val exchange: HttpServerExchange,
@@ -25,6 +24,8 @@ class PartialsConnection(
   init {
     partialConnections[id] = this
   }
+
+  fun getSession(): PartialsSession? = exchange.getPartialsSession()
 
   // send html content for the partial
   fun sendPartials(vararg partials: String) {

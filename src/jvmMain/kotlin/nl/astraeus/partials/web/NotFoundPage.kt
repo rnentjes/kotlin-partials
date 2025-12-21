@@ -4,7 +4,7 @@ import io.undertow.server.HttpServerExchange
 import kotlinx.html.*
 import java.io.Serializable
 
-open class NotFoundPage<S : Serializable, T : Serializable>(
+open class NotFoundPage<S : PartialsSession, T : Serializable>(
   request: Request,
   session: S,
   data: T,

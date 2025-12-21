@@ -3,6 +3,7 @@ package nl.astraeus.partials.web
 import io.undertow.io.IoCallback
 import io.undertow.io.Sender
 import io.undertow.server.HttpServerExchange
+import nl.astraeus.partials.partialsLogger
 import nl.astraeus.partials.web.PartialsConnections.partialConnections
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -51,7 +52,7 @@ object SenderTask : Runnable {
               }
             } catch (e: Throwable) {
               it.isOpen.set(false)
-              e.printStackTrace()
+              partialsLogger.error(e.message ?: "Error", e)
             }
           }
 
@@ -60,7 +61,7 @@ object SenderTask : Runnable {
           }
         }
       } catch (e: Throwable) {
-        e.printStackTrace()
+        partialsLogger.error(e.message ?: "Error", e)
       }
     }
 
@@ -71,8 +72,7 @@ class NoOpEventCallback(
   val connection: PartialsConnection,
 ) : IoCallback {
   override fun onComplete(exchange: HttpServerExchange?, sender: Sender?) {
-    // ignore
-    //println("onComplete")
+    // ignore, keep connection open
   }
 
   override fun onException(

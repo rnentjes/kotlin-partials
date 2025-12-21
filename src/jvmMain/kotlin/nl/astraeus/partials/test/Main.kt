@@ -10,6 +10,8 @@ import nl.astraeus.partials.createPartialsServer
 import nl.astraeus.partials.web.PartialsConnections.partialConnections
 import nl.astraeus.partials.web.PartialsSession
 import java.io.Serializable
+import java.time.ZoneId
+import java.util.*
 import java.util.concurrent.CopyOnWriteArraySet
 
 data class TestSession(
@@ -17,6 +19,7 @@ data class TestSession(
 ) : PartialsSession(), Serializable
 
 fun main() {
+  TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
   val sessionManager: SessionManager = InMemorySessionManager("SESSION_MANAGER")
   sessionManager.registerSessionListener(testSessionListener)
 
@@ -36,8 +39,10 @@ fun main() {
   while (!done) {
     Thread.sleep(999)
     println("We have ${sessions.size} sessions and are sending partials to ${partialConnections.size} connections")
-    val timePartial: HtmlBlockTag.() -> Unit = { renderTimePartial() }
     for (connection in partialConnections.values) {
+      val timePartial: HtmlBlockTag.() -> Unit = {
+        renderTimePartial(connection.getSession()?.timezone ?: ZoneId.systemDefault())
+      }
       connection.sendPartials(timePartial)
     }
   }
