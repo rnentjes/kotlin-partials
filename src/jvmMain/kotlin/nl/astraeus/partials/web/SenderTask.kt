@@ -30,7 +30,8 @@ object SenderTask : Runnable {
     while (running.get()) {
       try {
         var moreEvents = false
-        partialConnections.values.forEach {
+        val connections = ArrayList(partialConnections.values)
+        connections.forEach {
           if (!it.isOpen.get()) {
             partialConnections.remove(it.id)
           } else {
@@ -46,8 +47,8 @@ object SenderTask : Runnable {
                 moreEvents = true
               } else if (it.lastSendTime + 10000 < System.currentTimeMillis()) {
                 // Send keep-alive
-                val keepAlive = ByteBuffer.wrap(": keep-alive\n\n".toByteArray())
                 it.lastSendTime = System.currentTimeMillis()
+                val keepAlive = ByteBuffer.wrap(": keep-alive\n\n".toByteArray())
                 it.sender.send(keepAlive, NoOpEventCallback(it))
               }
             } catch (e: Throwable) {
