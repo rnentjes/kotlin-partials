@@ -56,10 +56,10 @@ object SenderTask : Runnable {
               partialsLogger.error(e.message ?: "Error", e)
             }
           }
+        }
 
-          if (!moreEvents) {
-            Thread.sleep(10)
-          }
+        if (!moreEvents) {
+          Thread.sleep(10)
         }
       } catch (e: Throwable) {
         partialsLogger.error(e.message ?: "Error", e)
