@@ -12,8 +12,8 @@ import io.undertow.server.session.SessionAttachmentHandler
 import io.undertow.server.session.SessionCookieConfig
 import io.undertow.server.session.SessionManager
 import nl.astraeus.partials.web.NotFoundPage
+import nl.astraeus.partials.web.PartialsHandler
 import nl.astraeus.partials.web.PartialsSession
-import nl.astraeus.partials.web.RequestHandler
 import nl.astraeus.partials.web.StaticResourceHandler
 import kotlin.reflect.KClass
 
@@ -31,33 +31,12 @@ fun <S : PartialsSession> createPartialsServer(
 ): Undertow {
   partialsLogger = logger
 
-  val resourceHandler = StaticResourceHandler(
-    resourceBasePath,
-    resourceUrlPrefix,
-  )
-
   val defaultPage = mapping.firstOrNull()?.second ?: NotFoundPage::class
-  val sessionHandler = SessionAttachmentHandler(
-    RequestHandler(
-      defaultPage,
-      session,
-      resourceHandler,
-      *mapping
-    ),
-    sessionManager,
-    sessionConfig
-  )
 
-  val compressionHandler =
-    EncodingHandler(
-      ContentEncodingRepository()
-        .addEncodingHandler(
-          "gzip",
-          GzipEncodingProvider(), 50,
-          Predicates.parse("max-content-size(5)")
-        )
-    ).setNext(sessionHandler)
-
+  val resourceHandler = createStaticResourceHandler(resourceBasePath, resourceUrlPrefix)
+  val partialsHandler = createPartialsHandler(defaultPage, session, resourceHandler, mapping)
+  val sessionHandler = createSessionHandler(partialsHandler, sessionManager, sessionConfig)
+  val compressionHandler = createCompressionHandler(sessionHandler)
   val canonicalPathHandler = CanonicalPathHandler(compressionHandler)
 
   val server = Undertow.builder()
@@ -69,3 +48,42 @@ fun <S : PartialsSession> createPartialsServer(
 
   return server
 }
+
+fun createStaticResourceHandler(
+  resourceBasePath: String,
+  resourceUrlPrefix: String
+): StaticResourceHandler = StaticResourceHandler(
+  resourceBasePath,
+  resourceUrlPrefix,
+)
+
+fun <S : PartialsSession> createPartialsHandler(
+  defaultPage: KClass<out Any>,
+  session: () -> S,
+  next: StaticResourceHandler,
+  mapping: Array<out Pair<String, KClass<*>>>
+): PartialsHandler<S> = PartialsHandler(
+  defaultPage,
+  session,
+  next,
+  *mapping
+)
+
+fun <S : PartialsSession> createSessionHandler(
+  next: PartialsHandler<S>,
+  sessionManager: SessionManager,
+  sessionConfig: SessionCookieConfig
+): SessionAttachmentHandler = SessionAttachmentHandler(
+  next,
+  sessionManager,
+  sessionConfig
+)
+
+fun createCompressionHandler(next: SessionAttachmentHandler): EncodingHandler? = EncodingHandler(
+  ContentEncodingRepository()
+    .addEncodingHandler(
+      "gzip",
+      GzipEncodingProvider(), 50,
+      Predicates.parse("max-content-size(5)")
+    )
+).setNext(next)

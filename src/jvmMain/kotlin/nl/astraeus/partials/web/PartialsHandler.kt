@@ -6,7 +6,7 @@ import io.undertow.util.HttpString
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 
-class RequestHandler<S : PartialsSession>(
+class PartialsHandler<S : PartialsSession>(
   val defaultPage: KClass<*>,
   val session: () -> S,
   val next: HttpHandler? = null,

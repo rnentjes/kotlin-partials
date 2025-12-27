@@ -191,6 +191,14 @@ object PartialsHandler {
         newScript.defer = oldScript.defer
         newScript.type = oldScript.type
         newScripts.add(newScript)
+
+        newScript.addEventListener("load", {
+          newScript.remove()
+        })
+        newScript.addEventListener("error", {
+          console.error("Error loading script", newScript)
+          newScript.remove()
+        })
       }
     }
 
