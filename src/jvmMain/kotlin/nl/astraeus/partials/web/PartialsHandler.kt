@@ -12,6 +12,7 @@ class PartialsHandler<S : PartialsSession>(
   val next: HttpHandler? = null,
   vararg val mappings: Pair<String, KClass<*>>
 ) : HttpHandler {
+
   init {
     // todo: check mappings for types constructors and data class types
     // cache constructors
@@ -19,6 +20,11 @@ class PartialsHandler<S : PartialsSession>(
 
   override fun handleRequest(exchange: HttpServerExchange) {
     val path = exchange.relativePath
+
+    if (exchange.requestMethod == HttpString("POST") && exchange.isInIoThread) {
+      exchange.dispatch(this)
+      return
+    }
 
     val request = exchange.request()
     var session = exchange.getPartialsSession<S>()
@@ -45,11 +51,6 @@ class PartialsHandler<S : PartialsSession>(
     }
 
     if (clazz != null) {
-      if (exchange.requestMethod == HttpString("POST") && exchange.isInIoThread) {
-        exchange.dispatch(this)
-        return
-      }
-
       val constructor = getConstructor(clazz)
       val dataType = constructor.parameters[2].type.classifier as KClass<*>
       val data = if (request.pageData == null) {

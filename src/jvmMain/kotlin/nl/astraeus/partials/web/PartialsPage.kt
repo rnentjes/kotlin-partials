@@ -52,6 +52,8 @@ fun HTMLTag.onBlur(vararg parameters: Pair<String, String>) = doPost("blur", *pa
 
 fun HTMLTag.onKeyUp(vararg parameters: Pair<String, String>) = doPost("keyup", *parameters)
 
+fun HTMLTag.onFileDrop(vararg parameters: Pair<String, String>) = doPost("file-drop", *parameters)
+
 fun INPUT.onEnter(vararg parameters: Pair<String, String>) {
   doPost("enter", *parameters)
 }
@@ -129,7 +131,7 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
       head()
       body {
         main {
-          form(method = FormMethod.post, encType = FormEncType.applicationXWwwFormUrlEncoded) {
+          form(method = FormMethod.post, encType = FormEncType.multipartFormData) {
             id = "page-form"
 
             this@render.content(exchange)

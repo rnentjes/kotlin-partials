@@ -26,25 +26,43 @@ class DashboardPage(
   data,
 ) {
   override var pageTitle: String = data.pageTitle
+  var filesDropped: String = ""
 
   override fun process(): String? {
-    if (request.data["action"] == "hello") {
-      data.count++
-      data.title = "Clicker! [clicked me ${data.count} times!]"
+    refresh("dropped-files")
 
-      pageTitle = "Click ${data.count}"
+    request.value("action") { value ->
+      when (value) {
+        "hello" -> {
+          data.count++
+          data.title = "Clicker! [clicked me ${data.count} times!]"
 
-      refresh("page-title")
-      refresh("hello")
+          pageTitle = "Click ${data.count}"
+
+          refresh("page-title")
+          refresh("hello")
+        }
+
+        "update-title" -> {
+          pageTitle = "Update title"
+          refresh("page-title")
+        }
+
+        "input-change" -> {
+          data.inputValue = request.data["input-value"] ?: ""
+          refresh("page-container")
+        }
+
+        "drop-file", "upload" -> {
+          filesDropped = ""
+          for ((name, _) in request.files) {
+            filesDropped += "$name "
+          }
+          refresh("page-container")
+        }
+      }
     }
-    if (request.data["action"] == "update-title") {
-      pageTitle = "Update title"
-      refresh("page-title")
-    }
-    if (request.data["action"] == "input-change") {
-      data.inputValue = request.data["input-value"] ?: ""
-      refresh("page-container")
-    }
+
     return null
   }
 
@@ -91,6 +109,39 @@ class DashboardPage(
 
         span {
           +"Input value: ${data.inputValue}"
+        }
+      }
+      br
+      div {
+        onFileDrop("action" to "drop-file")
+
+        style =
+          "border: 2px dashed #ccc; padding: 3em; text-align: center; background: var(--pico-card-background-color);"
+
+        +"Drop a file here"
+      }
+      div {
+        input {
+          type = InputType.file
+          name = "filex"
+          multiple = true
+        }
+        span {
+          role = "button"
+
+          onClick("action" to "upload")
+
+          +"Upload"
+        }
+      }
+      br
+      div {
+        id = "dropped-files"
+
+        if (filesDropped.isNotEmpty()) {
+          +"Files dropped/uploaded: $filesDropped"
+        } else {
+          +""
         }
       }
       br

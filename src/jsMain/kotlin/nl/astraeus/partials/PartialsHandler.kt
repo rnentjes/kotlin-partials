@@ -6,6 +6,7 @@ import nl.astraeus.partials.web.PARTIALS_REQUEST_HEADER
 import org.w3c.dom.*
 import org.w3c.dom.events.KeyboardEvent
 import org.w3c.dom.url.URLSearchParams
+import org.w3c.files.FileList
 import org.w3c.xhr.FormData
 import org.w3c.xhr.XMLHttpRequest
 
@@ -18,6 +19,7 @@ object PartialsHandler {
     "submit",
     "dblclick",
     "enter",
+    "file-drop",
   )
 
   private var activeElement: Element? = null
@@ -46,6 +48,7 @@ object PartialsHandler {
         addEventToPartialsElement(element, eventName)
       }
     }
+
     activeElement?.id?.also { id ->
       if (id.isNotBlank()) {
         val elementById = document.getElementById(id)
@@ -78,6 +81,28 @@ object PartialsHandler {
         }
       })
 
+      "file-drop" -> {
+        element.addEventListener("dragover", { event ->
+          event.preventDefault()
+          event.stopPropagation()
+        })
+
+        element.addEventListener("drop", { event ->
+          event.preventDefault()
+          event.stopPropagation()
+
+          if (event is DragEvent) {
+            val dt = event.dataTransfer
+            val files = dt!!.files
+
+            sendPartialEvent(
+              element.getAttribute("data-p-${eventName}") ?: "",
+              files
+            )
+          }
+        })
+      }
+
       else -> {
         element.addEventListener(eventName, {
           activeElement = document.activeElement
@@ -88,7 +113,10 @@ object PartialsHandler {
     }
   }
 
-  fun sendPartialEvent(parameters: String = "") {
+  fun sendPartialEvent(
+    parameters: String = "",
+    fileList: FileList? = null
+  ) {
     showSplash()
 
     val form = document.getElementById("page-form") as? HTMLFormElement
@@ -103,9 +131,14 @@ object PartialsHandler {
       params.asDynamic().keys().forEach { key -> formData.append(key, params.get(key) ?: "") }
     }
 
+    fileList?.let {
+      for (index in 0 until it.length) {
+        formData.append("partial-files", it.item(index)!!)
+      }
+    }
+
     val xhr = XMLHttpRequest()
     xhr.open("POST", window.location.href, true)
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded")
     xhr.setRequestHeader(PARTIALS_REQUEST_HEADER, "true")
 
     xhr.onload = {
@@ -118,7 +151,7 @@ object PartialsHandler {
       hideSplash()
     }
 
-    xhr.send(URLSearchParams(formData).toString())
+    xhr.send(formData)
   }
 
   private fun handleServerResponse(xhr: XMLHttpRequest) {

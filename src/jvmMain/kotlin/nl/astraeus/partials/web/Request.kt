@@ -8,8 +8,10 @@ import io.undertow.util.HttpString
 abstract class Request(
   val exchange: HttpServerExchange
 ) {
+  open val multipart: Boolean = false
   abstract val data: Map<String, String>
   var pageData: String? = null
+  open val files: Map<String, FormData.FileItem> = emptyMap()
 
   val path: String = exchange.relativePath
 
@@ -72,6 +74,40 @@ class FormDataRequest(
   }
 }
 
+class MultiPartDataRequest(
+  exchange: HttpServerExchange
+) : Request(exchange) {
+  override val multipart: Boolean = true
+  override val data = mutableMapOf<String, String>()
+  override val files = mutableMapOf<String, FormData.FileItem>()
+
+  init {
+    val parser = FormParserFactory.builder().build().createParser(exchange)
+    var formData = FormData(0)
+    if (parser != null) {
+      formData = parser.parseBlocking()
+      formData.iterator().forEach { key ->
+        val formValues = formData.get(key)
+
+        if (formValues != null) {
+          for (formValue in formValues) {
+            if (formValue.isFileItem) {
+              files[formValue.fileName] = formValue.fileItem
+            } else {
+              // Store regular form fields
+              if (key != "page-data") {
+                data[key] = formValue.value ?: ""
+              } else {
+                pageData = formValue.value
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 fun HttpServerExchange.request(): Request {
   val request: Request = when (requestMethod) {
     HttpString("GET") -> {
@@ -80,12 +116,15 @@ fun HttpServerExchange.request(): Request {
 
     HttpString("POST") -> {
       startBlocking()
-      val parser = FormParserFactory.builder().build().createParser(this)
-      var formData = FormData(0)
-      if (parser != null) {
-        formData = parser.parseBlocking()
+
+      // Check content type to determine request type
+      val contentType = requestHeaders.get("Content-Type")?.firstOrNull() ?: ""
+
+      if (contentType.contains("multipart/form-data")) {
+        MultiPartDataRequest(this)
+      } else {
+        FormDataRequest(this)
       }
-      FormDataRequest(this)
     }
 
     else -> {

@@ -16,7 +16,7 @@ object SenderTask : Runnable {
   fun start() {
     if (thread.isAlive) return
 
-    if (thread.state != Thread.State.TERMINATED) {
+    if (thread.state == Thread.State.TERMINATED) {
       thread = Thread(this)
     }
 
