@@ -31,7 +31,7 @@ fun <D : Serializable> D.encode(): String {
   return Base64.encode(bytes)
 }
 
-private fun HTMLTag.doPost(
+private fun CoreAttributeGroupFacade.doPost(
   eventName: String,
   vararg parameters: Pair<String, String>
 ) {
@@ -40,19 +40,28 @@ private fun HTMLTag.doPost(
   }
 }
 
-fun HTMLTag.onClick(vararg parameters: Pair<String, String>) = doPost("click", *parameters)
+private fun CoreAttributeGroupFacade.doClickPost(
+  eventName: String,
+  vararg parameters: Pair<String, String>
+) {
+  classes += "partials-cursor"
+  doPost(eventName, *parameters)
+}
 
-fun HTMLTag.onDoubleClick(vararg parameters: Pair<String, String>) = doPost("dblclick", *parameters)
+fun CoreAttributeGroupFacade.onClick(vararg parameters: Pair<String, String>) = doClickPost("click", *parameters)
 
-fun HTMLTag.onSubmit(vararg parameters: Pair<String, String>) = doPost("submit", *parameters)
+fun CoreAttributeGroupFacade.onDoubleClick(vararg parameters: Pair<String, String>) =
+  doClickPost("dblclick", *parameters)
 
-fun HTMLTag.onChange(vararg parameters: Pair<String, String>) = doPost("change", *parameters)
+fun CoreAttributeGroupFacade.onSubmit(vararg parameters: Pair<String, String>) = doClickPost("submit", *parameters)
 
-fun HTMLTag.onBlur(vararg parameters: Pair<String, String>) = doPost("blur", *parameters)
+fun CoreAttributeGroupFacade.onChange(vararg parameters: Pair<String, String>) = doPost("change", *parameters)
 
-fun HTMLTag.onKeyUp(vararg parameters: Pair<String, String>) = doPost("keyup", *parameters)
+fun CoreAttributeGroupFacade.onBlur(vararg parameters: Pair<String, String>) = doPost("blur", *parameters)
 
-fun HTMLTag.onFileDrop(vararg parameters: Pair<String, String>) = doPost("file-drop", *parameters)
+fun CoreAttributeGroupFacade.onKeyUp(vararg parameters: Pair<String, String>) = doPost("keyup", *parameters)
+
+fun CoreAttributeGroupFacade.onFileDrop(vararg parameters: Pair<String, String>) = doPost("file-drop", *parameters)
 
 fun INPUT.onEnter(vararg parameters: Pair<String, String>) {
   doPost("enter", *parameters)
@@ -133,6 +142,7 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
         main {
           form(method = FormMethod.post, encType = FormEncType.multipartFormData) {
             id = "page-form"
+            classes += ""
 
             this@render.content(exchange)
 

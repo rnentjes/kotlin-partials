@@ -4,20 +4,10 @@ Kotlin Partials is a web framework for Kotlin (JVM) that allows you to build int
 applications with server-driven logic. It is inspired by [htmx](https://htmx.org/), but with a key difference:
 the logic for how a request is handled resides on the server rather than being embedded in the HTML via attributes.
 
-## Key Concepts
-
-- **Server-Driven**: The server determines which parts of the page need to be updated in response to an event.
-- **Kotlin Multiplatform**: Leverages Kotlin for both server-side (JVM) and client-side (JS) logic, ensuring type safety
-  and code reuse.
-- **Partial Updates**: Instead of reloading the entire page, Kotlin Partials updates only the specific elements that
-  have changed.
-- **SSE Support**: Built-in support for Server-Sent Events (SSE) allows the server to push updates to the client in
-  real-time.
-
 ## How it Differs from HTMX
 
-In HTMX, you often use attributes like `hx-target` and `hx-swap` to define how the UI should change when a request is
-made.
+In HTMX, you often use attributes like `hx-target` and `hx-swap` to define how the page should be updated when
+a request is made.
 
 With **Kotlin Partials**, you define an event handler (like `onClick`) on the server. When the event is triggered,
 the server processes it and can choose to:
@@ -33,7 +23,7 @@ This approach keeps your HTML clean and centralizes your application logic on th
 ### 1. Define your Session and Page data
 
 The page data is any state you want to maintain for a single page. It is serialized to the client and sent with every
-request.
+request. The session is your http session and is available on any page for a single user.
 
 ```kotlin
 data class MySession(
@@ -65,7 +55,8 @@ class MyPage(
 
   override fun process(): String? {
     if (request.get("action") == "increment") {
-      // Logic to update data or session
+      data.counter++
+      
       refresh("counter-section")
     }
     return null
@@ -77,10 +68,12 @@ class MyPage(
 
       div {
         id = "counter-section"
+        
         +"Counter: ${data.counter}"
       }
 
       button {
+        // type button to prevent full page submit
         type = ButtonType.button
         onClick("action" to "increment")
         +"Increment"
@@ -128,13 +121,13 @@ Here is the [TodoMVC](https://todomvc.com/) example rewritten using Kotlin Parti
 
 ### Chat example
 
-There is also a simple chat example to show server side event support:
+There is also a simple chat example to show server side events support:
 
 - [Kotlin Partials Chat](https://github.com/rnentjes/kotlin-partials-chat)
 
 ### Notes example
 
-There is also a note taking tool example with a more complex UI:
+And there is an application to takes notes with a more complex UI:
 
 - [Simple notes](https://github.com/rnentjes/simple-notes)
 
@@ -149,8 +142,7 @@ It's not possible to have multiple forms on a page.
 ### Buttons
 
 Buttons with the type `submit` will cause a full page submit and refresh. Even though this works fine, the parameters
-passed to the onClick
-will not be sent to the server. Use type 'button' with an onClick instead.
+passed to the onClick will not be sent to the server. Use type 'button' with an onClick instead.
 
 ### kotlinx-html order of attributes
 
@@ -162,7 +154,7 @@ The text content of an element always has to be added last, or you will get the 
 So instead of:
 
 ```kotlin
-  button {
+button {
   +"Increment"
   onClick("action" to "increment")
 }
@@ -176,6 +168,11 @@ button {
   +"Increment"
 }
 ```
+
+### Server configuration
+
+The server uses undertow under the hood. If you need a different configuration, you can create your own chain of
+`HttpHandler`s. See the [PartialsServer](src/jvmMain/kotlin/nl/astraeus/partials/PartialsServer.kt) file.
 
 ## License
 

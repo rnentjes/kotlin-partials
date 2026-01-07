@@ -77,10 +77,8 @@ class StaticResourceHandler(
     exchange.responseHeaders.put(Headers.CONTENT_TYPE, contentType)
 
     // Read and send the resource
-    resourceStream.use { stream ->
-      val bytes = stream.readBytes()
-      exchange.responseSender.send(ByteBuffer.wrap(bytes))
-    }
+    val bytes = resourceStream.readBytes()
+    exchange.responseSender.send(ByteBuffer.wrap(bytes))
   }
 
   private fun getContentType(path: String): String {
