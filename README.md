@@ -9,38 +9,31 @@ the logic for how a request is handled resides on the server rather than being e
 In HTMX, you often use attributes like `hx-target` and `hx-swap` to define how the page should be updated when
 a request is made.
 
-With **Kotlin Partials**, you define an event handler (like `onClick`) on the server. When the event is triggered,
-the server processes it and can choose to:
+With **Kotlin Partials**, you define all the html with kotlinx-html on the server. For the events you define event
+handlers
+(like `onClick`) in the html builders on the server. When the event is triggered, the server processes it,
+and you can then choose to:
 
 1. Redirect to a new page.
 2. Refresh specific "partials" (parts of the page).
 3. Push updates via an SSE connection.
 
-This approach keeps your HTML clean and centralizes your application logic on the server.
+This way the logic to process events and update html view is close together.
 
 ## Getting Started
 
-### 1. Define your Session and Page data
+### Available on maven central
 
-The page data is any state you want to maintain for a single page. It is serialized to the client and sent with every
-request. The session is your http session and is available on any page for a single user.
+Add dependency to the gradle build file:
 
-```kotlin
-data class MySession(
-  var username: String = "Guest"
-) : PartialsSession(), Serializable
+    implementation("nl.astraeus:kotlin-partials:1.7.1")
 
-@Serializable
-data class MyPageData(
-  val counter: Int = 0
-) : Serializable
-```
-
-### 2. Create a Page
+### 1. Create a Page
 
 Extend `PartialsPage` to define your page logic and content. The `process` method is called whenever a request is made.
-The `refresh` method is used to update specific parts on the page by element id. The page is rendered again completely,
-but only the parts defined with `refresh` will be sent to the browser.
+In the process method you can call the `refresh` method with element id's to specify which parts of the
+page should be updated. The page is rendered again completely, but only the parts defined with `refresh`
+will be sent to the browser.
 
 ```kotlin
 class MyPage(
@@ -83,9 +76,26 @@ class MyPage(
 }
 ```
 
+### 2. Define your Session and Page data
+
+The page data is any state you want to maintain for a single page. It is serialized to the client and sent with every
+request. The session is your http session and is available on any page for a single user. There is a NoData class if no
+page data is required.
+
+```kotlin
+data class MySession(
+  var username: String = "Guest"
+) : PartialsSession(), Serializable
+
+@Serializable
+data class MyPageData(
+  val counter: Int = 0
+) : Serializable
+```
+
 ### 3. Initialize the Server
 
-The first page in the mappings list will also be the default page.
+Create and start the server. The first page in the mappings list will also be the default page.
 
 ```kotlin
 fun main() {
@@ -129,7 +139,7 @@ There is also a simple chat example to show server side events support:
 
 And there is an application to takes notes with a more complex UI:
 
-- [Simple notes](https://github.com/rnentjes/simple-notes)
+- [Developer notes](https://github.com/rnentjes/developer-notes)
 
 ## Tips & tricks
 
@@ -143,6 +153,28 @@ It's not possible to have multiple forms on a page.
 
 Buttons with the type `submit` will cause a full page submit and refresh. Even though this works fine, the parameters
 passed to the onClick will not be sent to the server. Use type 'button' with an onClick instead.
+
+### Request
+
+In the request object there are some helpers to handle the requests. For example the value method to get a value from a
+request:
+
+```kotlin
+
+// in a PartialsPage class
+fun process() {
+  request.value("action") { action ->
+    when ("action") {
+      "save" -> {
+        // save the form
+      }
+      "cancel" -> {
+        // don't save and return
+      }
+    }
+  }
+}
+```
 
 ### kotlinx-html order of attributes
 
@@ -160,7 +192,7 @@ button {
 }
 ```
 
-Make sure the text content is added last:
+Make sure the text content is always added last:
 
 ```kotlin
 button {
