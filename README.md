@@ -9,10 +9,10 @@ the logic for how a request is handled resides on the server rather than being e
 In HTMX, you often use attributes like `hx-target` and `hx-swap` to define how the page should be updated when
 a request is made.
 
-With **Kotlin Partials**, you define all the html with kotlinx-html on the server. For the events you define event
-handlers
-(like `onClick`) in the html builders on the server. When the event is triggered, the server processes it,
-and you can then choose to:
+With **Kotlin Partials**, you define all the html with [kotlinx.html](https://github.com/Kotlin/kotlinx.html) on the
+server.
+For the events you define event handlers (like `onClick`) in the html builders on the server.
+When the event is triggered, the server processes it, and you can then choose to:
 
 1. Redirect to a new page.
 2. Refresh specific "partials" (parts of the page).
@@ -112,7 +112,7 @@ fun main() {
 ## Features
 
 - **Event Handlers**: Easily attach `onClick`, `onChange`, `onSubmit`, etc., to your HTML elements.
-- **Type-Safe HTML**: Uses `kotlinx.html` for building your UI.
+- **Type-Safe HTML**: Uses [kotlinx.html](https://github.com/Kotlin/kotlinx.html) for building your UI.
 - **Automatic State Management**: Page data is automatically serialized and sent back and forth, maintaining state
   across partial updates.
 - **Real-time Updates**: Use `PartialsConnections` to push updates to clients from anywhere in your backend logic.
@@ -121,7 +121,7 @@ fun main() {
 
 ### Test page
 
-In the project there is a click counter test example in the `nl.astraeus.partials.test` package.
+In the project there is a [click counter test example]() in the `nl.astraeus.partials.test` package.
 
 ### Todo example
 
