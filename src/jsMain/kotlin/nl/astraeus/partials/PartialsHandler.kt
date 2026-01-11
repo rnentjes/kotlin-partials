@@ -149,6 +149,9 @@ object PartialsHandler {
     xhr.onerror = {
       console.error("Request failed", xhr)
       hideSplash()
+
+      window.alert("An error occurred while processing your request. Please try again later.")
+      window.location.reload()
     }
 
     xhr.send(formData)
