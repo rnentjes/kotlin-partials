@@ -170,6 +170,8 @@ object PartialsHandler {
       }
     } else {
       console.error("Error: ${xhr.status}", xhr)
+      window.alert("An error occurred while processing your request. Please try again later.")
+      window.location.reload()
     }
   }
 
