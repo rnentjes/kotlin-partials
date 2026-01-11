@@ -11,10 +11,7 @@ import io.undertow.server.session.InMemorySessionManager
 import io.undertow.server.session.SessionAttachmentHandler
 import io.undertow.server.session.SessionCookieConfig
 import io.undertow.server.session.SessionManager
-import nl.astraeus.partials.web.NotFoundPage
-import nl.astraeus.partials.web.PartialsHandler
-import nl.astraeus.partials.web.PartialsSession
-import nl.astraeus.partials.web.StaticResourceHandler
+import nl.astraeus.partials.web.*
 import kotlin.reflect.KClass
 
 var partialsLogger: PartialsLogger = DefaultPartialsLogger()
@@ -28,6 +25,7 @@ fun <S : PartialsSession> createPartialsServer(
   sessionConfig: SessionCookieConfig = SessionCookieConfig(),
   resourceBasePath: String = "static",
   resourceUrlPrefix: String = "/static",
+  maxRequestSize: Long = 100 * 1024 * 1024 // 100 MB limit
 ): Undertow {
   partialsLogger = logger
 
@@ -38,10 +36,11 @@ fun <S : PartialsSession> createPartialsServer(
   val sessionHandler = createSessionHandler(partialsHandler, sessionManager, sessionConfig)
   val compressionHandler = createCompressionHandler(sessionHandler)
   val canonicalPathHandler = CanonicalPathHandler(compressionHandler)
+  val limiter = RequestLimiter(canonicalPathHandler, maxRequestSize)
 
   val server = Undertow.builder()
     .addHttpListener(port, "localhost")
-    .setHandler(canonicalPathHandler)
+    .setHandler(limiter)
     .setServerOption(UndertowOptions.IDLE_TIMEOUT, 30000)
     .setServerOption(UndertowOptions.SHUTDOWN_TIMEOUT, 1000)
     .build()

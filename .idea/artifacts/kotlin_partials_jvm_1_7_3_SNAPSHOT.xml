@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="kotlin-partials-jvm-1.7.3-SNAPSHOT">
+    <output-path>$PROJECT_DIR$/build/libs</output-path>
+    <root id="archive" name="kotlin-partials-jvm-1.7.3-SNAPSHOT.jar">
+      <element id="module-output" name="kotlin-partials.jvmMain" />
+    </root>
+  </artifact>
+</component>

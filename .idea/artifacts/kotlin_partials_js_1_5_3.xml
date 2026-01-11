@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="kotlin-partials-js-1.5.3">
+    <output-path>$PROJECT_DIR$/build/libs</output-path>
+    <root id="archive" name="kotlin-partials-js-1.5.3.jar">
+      <element id="module-output" name="kotlin-partials.jsMain" />
+    </root>
+  </artifact>
+</component>
