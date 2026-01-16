@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "nl.astraeus"
-version = "1.7.8"
+version = "1.7.9"
 
 repositories {
   mavenCentral()
@@ -48,9 +48,8 @@ kotlin {
     val jvmMain by getting {
       dependencies {
         implementation("org.jetbrains.kotlin:kotlin-reflect:2.2.21")
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
 
-        api("io.undertow:undertow-core:2.3.20.Final")
+        api("io.undertow:undertow-core:2.3.21.Final")
         api("org.jetbrains.kotlinx:kotlinx-html-jvm:0.12.0")
       }
     }
