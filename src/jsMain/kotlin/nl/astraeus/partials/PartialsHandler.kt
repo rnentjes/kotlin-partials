@@ -6,9 +6,9 @@ import nl.astraeus.partials.web.PARTIALS_REQUEST_HEADER
 import org.w3c.dom.*
 import org.w3c.dom.events.KeyboardEvent
 import org.w3c.dom.url.URLSearchParams
+import org.w3c.fetch.*
 import org.w3c.files.FileList
 import org.w3c.xhr.FormData
-import org.w3c.xhr.XMLHttpRequest
 
 object PartialsHandler {
   private val attributeNames = listOf(
@@ -137,39 +137,44 @@ object PartialsHandler {
       }
     }
 
-    val xhr = XMLHttpRequest()
-    xhr.open("POST", window.location.href, true)
-    xhr.setRequestHeader(PARTIALS_REQUEST_HEADER, "true")
-
-    xhr.onload = {
-      handleServerResponse(xhr)
-      hideSplash()
+    val headers = Headers().also {
+      it.append(PARTIALS_REQUEST_HEADER, "true")
     }
 
-    xhr.onerror = {
-      console.error("Request failed", xhr)
-      hideSplash()
+    val requestInit = RequestInit(
+      method = "POST",
+      headers = headers,
+      body = formData,
+      credentials = RequestCredentials.SAME_ORIGIN
+    )
 
-      window.alert("An error occurred while processing your request. Please try again later.")
-      window.location.reload()
-    }
-
-    xhr.send(formData)
-  }
-
-  private fun handleServerResponse(xhr: XMLHttpRequest) {
-    if (xhr.status == 200.toShort()) {
-      val response = xhr.response
-      if (response is String) {
-        if (response.startsWith("location: ")) {
-          val location = response.substringAfter("location: ")
-          window.location.href = location
-        } else {
-          handleHtmlResponse(xhr.responseText)
+    window.fetch(window.location.href, requestInit)
+      .then { response ->
+        response.text().then { bodyText ->
+          handleServerResponse(response, bodyText)
         }
       }
+      .catch { error ->
+        console.error("Request failed", error)
+
+        window.alert("An error occurred while processing your request. Please try again later.")
+        window.location.reload()
+      }
+      .finally {
+        hideSplash()
+      }
+  }
+
+  private fun handleServerResponse(response: Response, bodyText: String) {
+    if (response.status == 200.toShort()) {
+      if (bodyText.startsWith("location: ")) {
+        val location = bodyText.substringAfter("location: ")
+        window.location.href = location
+      } else {
+        handleHtmlResponse(bodyText)
+      }
     } else {
-      console.error("Error: ${xhr.status}", xhr)
+      console.error("Error: ${response.status}", response)
       window.alert("An error occurred while processing your request. Please try again later.")
       window.location.reload()
     }
