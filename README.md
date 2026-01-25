@@ -26,7 +26,7 @@ This way the logic to process events and update html view is close together.
 
 Add dependency to the gradle build file:
 
-    implementation("nl.astraeus:kotlin-partials:1.7.1")
+    implementation("nl.astraeus:kotlin-partials:1.9.0")
 
 ### 1. Create a Page
 
