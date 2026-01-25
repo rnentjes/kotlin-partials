@@ -31,7 +31,7 @@ fun <S : Serializable> HttpServerExchange.setPartialsSession(session: S) {
 
 fun <S : Serializable> Session.getPartialsSession(): S? {
   try {
-    return this.getAttribute(PARTIALS_SESSION_ID) as S?
+    return this.getAttribute(PARTIALS_SESSION_ID) as? S
   } catch (e: IllegalStateException) {
     return null
   }

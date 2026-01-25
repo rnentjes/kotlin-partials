@@ -22,7 +22,7 @@ fun <S : PartialsSession> createPartialsServer(
   vararg mapping: Pair<String, KClass<*>>,
   logger: PartialsLogger = DefaultPartialsLogger(),
   sessionManager: SessionManager = InMemorySessionManager("SESSION_MANAGER"),
-  sessionConfig: SessionCookieConfig = SessionCookieConfig(),
+  sessionConfig: SessionCookieConfig = createSessionCookieConfig(),
   resourceBasePath: String = "static",
   resourceUrlPrefix: String = "/static",
   maxRequestSize: Long = 100 * 1024 * 1024 // 100 MB limit
@@ -46,6 +46,12 @@ fun <S : PartialsSession> createPartialsServer(
     .build()
 
   return server
+}
+
+fun createSessionCookieConfig(): SessionCookieConfig = SessionCookieConfig().apply {
+  isSecure = true
+  isHttpOnly = true
+  path = "/"
 }
 
 fun createStaticResourceHandler(
