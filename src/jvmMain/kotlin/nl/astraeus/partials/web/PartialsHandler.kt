@@ -29,6 +29,7 @@ class PartialsHandler<S : PartialsSession>(
     val request = exchange.request()
     var session = exchange.getPartialsSession<S>()
     if (session == null) {
+      println("Creating new session in path: ${exchange.requestPath}")
       session = session()
       exchange.setPartialsSession(session)
     }

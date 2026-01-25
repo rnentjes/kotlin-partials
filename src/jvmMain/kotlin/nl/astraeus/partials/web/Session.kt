@@ -9,13 +9,14 @@ import java.io.Serializable
 fun HttpServerExchange.getSession(): Session {
   val sessionManager = getAttachment(SessionManager.ATTACHMENT_KEY)
   val sessionConfig = getAttachment(SessionConfig.ATTACHMENT_KEY)
-  var session: Session? = sessionManager.getSession(this, sessionConfig)
 
-  if (session == null) {
-    session = sessionManager.createSession(this, sessionConfig)
-  }
-
-  return session
+  return sessionManager.getSession(
+    this,
+    sessionConfig
+  ) ?: sessionManager.createSession(
+    this,
+    sessionConfig
+  )
 }
 
 val PARTIALS_SESSION_ID = "partials-session"
