@@ -3,6 +3,7 @@ package nl.astraeus.partials.web
 import io.undertow.server.HttpHandler
 import io.undertow.server.HttpServerExchange
 import io.undertow.util.HttpString
+import nl.astraeus.partials.partialsLogger
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 
@@ -47,7 +48,7 @@ class PartialsHandler<S : PartialsSession>(
     if (clazz != null) {
       var session = exchange.getPartialsSession<S>()
       if (session == null) {
-        println("Creating new session in path: ${exchange.requestPath} -ID: ${exchange.getSession().id}")
+        partialsLogger.trace("Creating new session in path: ${exchange.requestPath} - ID: ${exchange.getSession().id}")
         session = session()
         exchange.setPartialsSession(session)
       }

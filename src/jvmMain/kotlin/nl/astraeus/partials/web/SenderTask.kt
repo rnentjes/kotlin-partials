@@ -43,7 +43,15 @@ object SenderTask : Runnable {
                 val msg = event.replace("\n", "")
                 val payload = ByteBuffer.wrap("id: ${it.eventId.incrementAndGet()}\ndata: $msg\n\n".toByteArray())
                 it.lastSendTime = System.currentTimeMillis()
-                it.sender.send(payload, NoOpEventCallback(it))
+                try {
+                  it.sender.send(payload, NoOpEventCallback(it))
+                } catch (io: IOException) {
+                  if (io.message?.contains("Broken pipe") == false) {
+                    throw io
+                  } else {
+                    partialsLogger.trace("Connection ${it.id} closed due to broken pipe: ${io.message}")
+                  }
+                }
                 moreEvents = true
               } else if (it.lastSendTime + 10000 < System.currentTimeMillis()) {
                 // Send keep-alive
