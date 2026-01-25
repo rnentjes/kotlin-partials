@@ -2,7 +2,6 @@ package nl.astraeus.partials.web
 
 import io.undertow.server.HttpHandler
 import io.undertow.server.HttpServerExchange
-import io.undertow.server.session.SessionConfig
 import io.undertow.util.HttpString
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
@@ -29,20 +28,9 @@ class PartialsHandler<S : PartialsSession>(
 
     val request = exchange.request()
     if (path == "/partials-sse") {
-      val sessionConfig = exchange.getAttachment(SessionConfig.ATTACHMENT_KEY)
-      val undertowSession = exchange.getSession()
-      sessionConfig.setSessionId(exchange, undertowSession.id)
-
       val handler = PartialsSSEHandler(request)
       handler.handleRequest(exchange)
       return
-    }
-
-    var session = exchange.getPartialsSession<S>()
-    if (session == null) {
-      println("Creating new session in path: ${exchange.requestPath} -ID: ${exchange.getSession().id}")
-      session = session()
-      exchange.setPartialsSession(session)
     }
 
     var clazz: KClass<*>? = null
@@ -57,6 +45,13 @@ class PartialsHandler<S : PartialsSession>(
     }
 
     if (clazz != null) {
+      var session = exchange.getPartialsSession<S>()
+      if (session == null) {
+        println("Creating new session in path: ${exchange.requestPath} -ID: ${exchange.getSession().id}")
+        session = session()
+        exchange.setPartialsSession(session)
+      }
+
       val constructor = getConstructor(clazz)
       val dataType = constructor.parameters[2].type.classifier as KClass<*>
       val data = if (request.pageData == null) {
