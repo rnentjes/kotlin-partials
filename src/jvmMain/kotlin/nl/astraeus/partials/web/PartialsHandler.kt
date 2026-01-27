@@ -4,8 +4,38 @@ import io.undertow.server.HttpHandler
 import io.undertow.server.HttpServerExchange
 import io.undertow.util.HttpString
 import nl.astraeus.partials.partialsLogger
+import java.io.Serializable
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
+
+fun <S : PartialsSession, D : Serializable> getPartialsComponentInstance(
+  page: KClass<*>,
+  id: String,
+  request: Request,
+  session: S,
+  data: D
+): PartialsComponent<S, D> {
+  val constructor = getConstructor(page)
+
+  return constructor.call(id, request, session, data) as PartialsComponent<S, D>
+}
+
+private fun getConstructor(clazz: KClass<*>): KFunction<Any> {
+  val tp = clazz.typeParameters
+  val constr = clazz.constructors
+
+  if (constr.size != 1) {
+    error("Expected exactly one constructor for a PartialsPage, found ${constr.size} in ${clazz.qualifiedName}")
+  }
+
+  val constructor = constr.first()
+
+  if (constructor.parameters.size != 3 && constructor.parameters.size != 4) {
+    error("Expected exactly three or four parameters for a PartialsPage constructor (request, session and data), found ${constructor.parameters.size} in ${clazz.qualifiedName}")
+  }
+
+  return constructor
+}
 
 class PartialsHandler<S : PartialsSession>(
   val defaultPage: KClass<*>,
@@ -67,22 +97,5 @@ class PartialsHandler<S : PartialsSession>(
     } else {
       next?.handleRequest(exchange) ?: error("No handler found for path $path")
     }
-  }
-
-  private fun getConstructor(clazz: KClass<*>): KFunction<Any> {
-    val tp = clazz.typeParameters
-    val constr = clazz.constructors
-
-    if (constr.size != 1) {
-      error("Expected exactly one constructor for a PartialsPage, found ${constr.size} in ${clazz.qualifiedName}")
-    }
-
-    val constructor = constr.first()
-
-    if (constructor.parameters.size != 3) {
-      error("Expected exactly three parameters for a PartialsPage constructor (request, session and data), found ${constructor.parameters.size} in ${clazz.qualifiedName}")
-    }
-
-    return constructor
   }
 }

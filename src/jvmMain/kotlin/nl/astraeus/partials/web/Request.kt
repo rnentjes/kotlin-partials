@@ -5,9 +5,18 @@ import io.undertow.server.handlers.form.FormData
 import io.undertow.server.handlers.form.FormParserFactory
 import io.undertow.util.HttpString
 
+enum class RequestState {
+  PROCESSING,
+  REDIRECTED,
+  RENDERING,
+}
+
 abstract class Request(
   val exchange: HttpServerExchange
 ) {
+  var state = RequestState.PROCESSING
+  var redirectUrl: String? = null
+
   open val multipart: Boolean = false
   abstract val data: Map<String, String>
   var pageData: String? = null

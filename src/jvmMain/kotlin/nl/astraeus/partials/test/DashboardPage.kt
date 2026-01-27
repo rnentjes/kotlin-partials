@@ -10,6 +10,7 @@ class DashboardData(
   var count: Int = 0,
   var pageTitle: String = "Partials v.1.0.0",
   var inputValue: String = "",
+  var myCompValue: String = ""
 ) : Serializable {
   companion object {
     val serialVersionUID = 1L
@@ -150,6 +151,9 @@ class DashboardPage(
         +"Index"
       }
 
+      hr()
+
+      include("my-component", MyComponent::class)
     }
   }
 

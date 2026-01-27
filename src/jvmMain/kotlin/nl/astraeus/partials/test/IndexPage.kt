@@ -43,6 +43,7 @@ class IndexPage(
         href = "/dashboard"
         +"Dashboard"
       }
+
       hr()
       renderTimePartial(session.timezone)
     }

@@ -36,14 +36,14 @@ object PartialsHandler {
       taSelectionStart = ae.selectionStart ?: -1
     }
 
-    for (eventName in attributeNames) {
+    attributeNames.forEach { eventName ->
       if (element.getAttribute("data-p-${eventName}") != null) {
         addEventToPartialsElement(element, eventName)
       }
 
       val list = element.querySelectorAll("[data-p-${eventName}]") ?: return
 
-      for (index in 0..<list.length) {
+      repeat(list.length) { index ->
         val element = list.item(index) as Element
         addEventToPartialsElement(element, eventName)
       }

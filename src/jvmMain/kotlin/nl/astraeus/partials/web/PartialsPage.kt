@@ -5,6 +5,9 @@ import io.undertow.server.HttpServerExchange
 import io.undertow.util.Headers
 import kotlinx.html.*
 import kotlinx.html.consumers.DelayedConsumer
+import nl.astraeus.partials.tag.HtmlBuilder
+import nl.astraeus.partials.tag.PartialsBuilder
+import nl.astraeus.partials.tag.PartialsProcessor
 import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
@@ -12,6 +15,7 @@ import java.io.Serializable
 import java.nio.ByteBuffer
 import java.time.ZoneId
 import kotlin.io.encoding.Base64
+import kotlin.reflect.KClass
 
 typealias Builder = DelayedConsumer<String>
 
@@ -78,6 +82,31 @@ abstract class PartialsSession : Serializable {
 
 class NoData : PartialsSession()
 
+abstract class PartialsComponent<S : PartialsSession, T : Serializable>(
+  val id: String,
+  request: Request,
+  session: S,
+  data: T,
+) : PartialsPage<S, T>(
+  request,
+  session,
+  data
+) {
+
+  final override fun process(): String? {
+    // should not be used in components
+    return null
+  }
+
+  abstract fun process(id: String): String?
+
+  override fun Builder.render(exchange: HttpServerExchange) {
+    content(exchange)
+  }
+
+  override fun HTML.head() {}
+}
+
 abstract class PartialsPage<S : PartialsSession, T : Serializable>(
   val request: Request,
   val session: S,
@@ -90,7 +119,7 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
     generateToken()
   }
 
-  private val partials = mutableSetOf("page-data")
+  internal val partials = mutableSetOf("page-data")
 
   fun getPartialsConnection() = PartialsConnections.partialConnections[connectionId]
 
@@ -107,7 +136,7 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
       session.timezone = ZoneId.of(id)
     }
 
-    val redirectUrl = process()
+    val redirectUrl = runProcessing()
 
     if (redirectUrl != null) {
       if (exchange.isPartialsRequest()) {
@@ -118,10 +147,25 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
         exchange.responseHeaders.put(Headers.LOCATION, redirectUrl)
       }
     } else {
+      request.state = RequestState.RENDERING
       exchange.responseHeaders.put(Headers.CONTENT_TYPE, "text/html; charset=UTF-8")
       val content = generateContent(exchange)
       exchange.responseSender.send(content)
     }
+  }
+
+  private fun runProcessing(): String? {
+    val redirect = process()
+    if (redirect != null) {
+      return redirect
+    }
+    val bldr = PartialsProcessor()
+    val consumer = DelayedConsumer(bldr)
+
+    request.state = RequestState.PROCESSING
+    consumer.render(request.exchange)
+
+    return request.redirectUrl
   }
 
   private fun Builder.renderDataInput(update: Boolean) {
@@ -135,7 +179,54 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
 
   abstract fun Builder.content(exchange: HttpServerExchange)
 
-  fun Builder.render(exchange: HttpServerExchange) {
+  fun Builder.include(id: String, pageClass: KClass<*>) {
+    when (request.state) {
+      RequestState.PROCESSING -> {
+        val component: PartialsComponent<*, *> = getPartialsComponentInstance(
+          pageClass,
+          id,
+          request,
+          session,
+          data
+        )
+
+        val redirect = component.process(id)
+        if (redirect != null) {
+          request.state = RequestState.REDIRECTED
+          request.redirectUrl = redirect
+          return
+        } else {
+          partials.addAll(component.partials)
+        }
+      }
+
+      RequestState.RENDERING -> {
+        div {
+          this@div.id = id
+
+          if (!request.exchange.isPartialsRequest() || partials.contains(id)) {
+            val component: PartialsPage<*, *> = getPartialsComponentInstance(
+              pageClass,
+              id,
+              request,
+              session,
+              data
+            )
+
+            with(component) {
+              render(request.exchange)
+            }
+          }
+        }
+      }
+
+      RequestState.REDIRECTED -> {
+        // nothing to do here
+      }
+    }
+  }
+
+  open fun Builder.render(exchange: HttpServerExchange) {
     html {
       head()
       body {

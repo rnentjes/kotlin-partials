@@ -5,6 +5,7 @@ import io.undertow.server.HttpServerExchange
 import kotlinx.html.HtmlBlockTag
 import kotlinx.html.consumers.DelayedConsumer
 import kotlinx.html.div
+import nl.astraeus.partials.tag.HtmlBuilder
 import nl.astraeus.partials.web.PartialsConnections.partialConnections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingQueue
