@@ -153,7 +153,7 @@ class DashboardPage(
 
       hr()
 
-      include("my-component", MyComponent::class)
+      include("my-component", MyComponent(request))
     }
   }
 

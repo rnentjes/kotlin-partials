@@ -15,7 +15,6 @@ import java.io.Serializable
 import java.nio.ByteBuffer
 import java.time.ZoneId
 import kotlin.io.encoding.Base64
-import kotlin.reflect.KClass
 
 typealias Builder = DelayedConsumer<String>
 
@@ -82,29 +81,16 @@ abstract class PartialsSession : Serializable {
 
 class NoData : PartialsSession()
 
-abstract class PartialsComponent<S : PartialsSession, T : Serializable>(
-  val id: String,
-  request: Request,
-  session: S,
-  data: T,
-) : PartialsPage<S, T>(
-  request,
-  session,
-  data
-) {
+abstract class PartialsComponent {
+  internal val partials: MutableSet<String> = mutableSetOf()
 
-  final override fun process(): String? {
-    // should not be used in components
-    return null
+  fun refresh(id: String) {
+    partials.add(id)
   }
 
   abstract fun process(id: String): String?
 
-  override fun Builder.render(exchange: HttpServerExchange) {
-    content(exchange)
-  }
-
-  override fun HTML.head() {}
+  abstract fun Builder.content(exchange: HttpServerExchange)
 }
 
 abstract class PartialsPage<S : PartialsSession, T : Serializable>(
@@ -179,17 +165,10 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
 
   abstract fun Builder.content(exchange: HttpServerExchange)
 
-  fun Builder.include(id: String, pageClass: KClass<*>) {
+  fun Builder.include(id: String, component: PartialsComponent) {
     when (request.state) {
       RequestState.PROCESSING -> {
-        val component: PartialsComponent<*, *> = getPartialsComponentInstance(
-          pageClass,
-          id,
-          request,
-          session,
-          data
-        )
-
+        request.components[id] = component
         val redirect = component.process(id)
         if (redirect != null) {
           request.state = RequestState.REDIRECTED
@@ -205,16 +184,8 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
           this@div.id = id
 
           if (!request.exchange.isPartialsRequest() || partials.contains(id)) {
-            val component: PartialsPage<*, *> = getPartialsComponentInstance(
-              pageClass,
-              id,
-              request,
-              session,
-              data
-            )
-
-            with(component) {
-              render(request.exchange)
+            with((request.components[id] ?: component)) {
+              content(request.exchange)
             }
           }
         }

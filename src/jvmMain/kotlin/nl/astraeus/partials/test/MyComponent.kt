@@ -9,26 +9,19 @@ import nl.astraeus.partials.web.Request
 import nl.astraeus.partials.web.onClick
 
 class MyComponent(
-  id: String,
-  request: Request,
-  session: TestSession,
-  data: DashboardData,
-) : PartialsComponent<TestSession, DashboardData>(
-  id,
-  request,
-  session,
-  data,
-) {
+  val request: Request
+) : PartialsComponent() {
+  var myComponentValue: String = ""
 
   override fun process(id: String): String? {
-    data.myCompValue = request.get("my-component-value") ?: ""
+    myComponentValue = request.get("my-component-value") ?: ""
 
     if (request.get("action") == "redirect-from-my-component") {
       return "/index"
     }
 
     if (request.get("action") == "update-my-component-value") {
-      data.myCompValue += data.myCompValue.length.toString()
+      myComponentValue += myComponentValue.length.toString()
       refresh(id)
     }
 
@@ -46,7 +39,7 @@ class MyComponent(
 
         input {
           name = "my-component-value"
-          value = data.myCompValue
+          value = myComponentValue
         }
 
         div {

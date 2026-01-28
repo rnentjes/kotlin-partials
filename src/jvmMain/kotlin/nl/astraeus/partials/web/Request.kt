@@ -4,6 +4,7 @@ import io.undertow.server.HttpServerExchange
 import io.undertow.server.handlers.form.FormData
 import io.undertow.server.handlers.form.FormParserFactory
 import io.undertow.util.HttpString
+import java.util.concurrent.ConcurrentHashMap
 
 enum class RequestState {
   PROCESSING,
@@ -15,6 +16,7 @@ abstract class Request(
   val exchange: HttpServerExchange
 ) {
   var state = RequestState.PROCESSING
+  val components = ConcurrentHashMap<String, PartialsComponent>()
   var redirectUrl: String? = null
 
   open val multipart: Boolean = false
