@@ -7,8 +7,10 @@ import io.undertow.server.session.SessionListener
 import io.undertow.server.session.SessionManager
 import kotlinx.html.HtmlBlockTag
 import nl.astraeus.partials.createPartialsServer
+import nl.astraeus.partials.web.NoData
 import nl.astraeus.partials.web.PartialsConnections.partialConnections
 import nl.astraeus.partials.web.PartialsSession
+import nl.astraeus.partials.web.pageFactory
 import java.io.Serializable
 import java.time.ZoneId
 import java.util.*
@@ -23,11 +25,13 @@ fun main() {
   val sessionManager: SessionManager = InMemorySessionManager("SESSION_MANAGER")
   sessionManager.registerSessionListener(testSessionListener)
 
-  val servers = createPartialsServer(
+  val servers = createPartialsServer<TestSession>(
     2500,
     { TestSession() },
-    "/index" to IndexPage::class,
-    "/dashboard" to DashboardPage::class,
+//    "/index" to ::IndexPage,
+//    "/dashboard" to ::DashboardPage,
+    "/index" to pageFactory<TestSession, NoData> { IndexPage() },
+    "/dashboard" to pageFactory<TestSession, DashboardData> { DashboardPage() },
     sessionManager = sessionManager
   )
 

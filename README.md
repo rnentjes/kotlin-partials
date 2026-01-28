@@ -9,7 +9,7 @@ the logic for how a request is handled resides on the server rather than being e
 In HTMX, you often use attributes like `hx-target` and `hx-swap` to define how the page should be updated when
 a request is made.
 
-With **Kotlin Partials**, you define all the html with [kotlinx.html](https://github.com/Kotlin/kotlinx.html) on the
+With **Kotlin Partials**, you define all the HTML with [kotlinx.html](https://github.com/Kotlin/kotlinx.html) on the
 server.
 For the events you define event handlers (like `onClick`) in the html builders on the server.
 When the event is triggered, the server processes it, and you can then choose to:
@@ -24,9 +24,9 @@ This way the logic to process events and update html view is close together.
 
 ### Available on maven central
 
-Add dependency to the gradle build file:
+Add the following dependency to the Gradle build file:
 
-    implementation("nl.astraeus:kotlin-partials:1.9.0")
+    implementation("nl.astraeus:kotlin-partials:2.0.0")
 
 ### 1. Create a Page
 
@@ -36,15 +36,7 @@ page should be updated. The page is rendered again completely, but only the part
 will be sent to the browser.
 
 ```kotlin
-class MyPage(
-  request: Request,
-  session: MySession,
-  data: MyPageData
-) : PartialsPage<MySession, MyPageData>(
-  request,
-  session,
-  data
-) {
+class MyPage : PartialsPage<MySession, MyPageData>() {
 
   override fun process(): String? {
     if (request.get("action") == "increment") {
@@ -79,8 +71,11 @@ class MyPage(
 ### 2. Define your Session and Page data
 
 The page data is any state you want to maintain for a single page. It is serialized to the client and sent with every
-request. The session is your http session and is available on any page for a single user. There is a NoData class if no
+request. It should have a single constructor that can be called without any arguments. There is a NoData class if no
 page data is required.
+
+The session is your http session and is available on any page for a single user. A new session is made with the factory
+method passed to the createPartialsServer method.
 
 ```kotlin
 data class MySession(

@@ -79,7 +79,7 @@ abstract class PartialsSession : Serializable {
   var timezone: ZoneId = ZoneId.systemDefault()
 }
 
-class NoData : PartialsSession()
+class NoData : Serializable
 
 abstract class PartialsComponent {
   internal val partials: MutableSet<String> = mutableSetOf()
@@ -94,20 +94,26 @@ abstract class PartialsComponent {
 }
 
 abstract class PartialsPage<S : PartialsSession, T : Serializable>(
-  val request: Request,
-  val session: S,
-  val data: T,
-  val staticBasePath: String = "/partials"
+  val initialData: () -> T
 ) : HttpHandler {
-  val connectionId = if (request.exchange.isPartialsRequest()) {
-    request.get(PARTIALS_CONNECTION_ID_HEADER) ?: error("No connection id found in partials request!")
-  } else {
-    generateToken()
+  lateinit var request: Request
+  lateinit var session: S
+  lateinit var data: T
+  var staticBasePath: String = "/partials"
+
+  val connectionId by lazy {
+    if (request.exchange.isPartialsRequest()) {
+      request.get(PARTIALS_CONNECTION_ID_HEADER) ?: error("No connection id found in partials request!")
+    } else {
+      generateToken()
+    }
   }
 
   internal val partials = mutableSetOf("page-data")
 
   fun getPartialsConnection() = PartialsConnections.partialConnections[connectionId]
+
+  open fun onInit() {}
 
   open fun process(): String? {
     return null
@@ -183,10 +189,8 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
         div {
           this@div.id = id
 
-          if (!request.exchange.isPartialsRequest() || partials.contains(id)) {
-            with((request.components[id] ?: component)) {
-              content(request.exchange)
-            }
+          with((request.components[id] ?: component)) {
+            content(request.exchange)
           }
         }
       }

@@ -12,21 +12,13 @@ class DashboardData(
   var inputValue: String = "",
   var myCompValue: String = ""
 ) : Serializable {
+
   companion object {
     val serialVersionUID = 1L
   }
 }
 
-class DashboardPage(
-  request: Request,
-  session: TestSession,
-  data: DashboardData,
-) : HeadPage<DashboardData>(
-  request,
-  session,
-  data,
-) {
-  override var pageTitle: String = data.pageTitle
+class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
   var filesDropped: String = ""
 
   override fun process(): String? {

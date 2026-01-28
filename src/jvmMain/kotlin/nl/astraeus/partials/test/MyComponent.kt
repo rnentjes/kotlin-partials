@@ -47,9 +47,7 @@ class MyComponent(
 
           +"Click to redirect from my Component"
         }
-
       }
     }
   }
-
 }

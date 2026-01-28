@@ -2,17 +2,8 @@ package nl.astraeus.partials.web
 
 import io.undertow.server.HttpServerExchange
 import kotlinx.html.*
-import java.io.Serializable
 
-open class NotFoundPage<S : PartialsSession, T : Serializable>(
-  request: Request,
-  session: S,
-  data: T,
-) : PartialsPage<S, T>(
-  request,
-  session,
-  data,
-) {
+open class NotFoundPage<S : PartialsSession>() : PartialsPage<S, NoData>({ NoData() }) {
   open var pageTitle: String = "Not found"
 
   override fun Builder.content(exchange: HttpServerExchange) {

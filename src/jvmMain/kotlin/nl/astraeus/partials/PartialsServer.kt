@@ -11,11 +11,11 @@ import io.undertow.server.session.InMemorySessionManager
 import io.undertow.server.session.SessionAttachmentHandler
 import io.undertow.server.session.SessionCookieConfig
 import io.undertow.server.session.SessionManager
-import nl.astraeus.partials.web.NotFoundPage
-import nl.astraeus.partials.web.PartialsHandler
-import nl.astraeus.partials.web.PartialsSession
-import nl.astraeus.partials.web.StaticResourceHandler
+import nl.astraeus.partials.web.*
+import java.io.Serializable
 import kotlin.reflect.KClass
+import kotlin.reflect.KFunction
+import kotlin.reflect.full.memberProperties
 
 var partialsLogger: PartialsLogger = DefaultPartialsLogger()
 var maximumRequestSize: Long = 100 * 1024 * 1024
@@ -23,7 +23,7 @@ var maximumRequestSize: Long = 100 * 1024 * 1024
 fun <S : PartialsSession> createPartialsServer(
   port: Int = 8080,
   session: () -> S,
-  vararg mapping: Pair<String, KClass<*>>,
+  vararg mapping: Pair<String, PageFactory<S, *>>,
   logger: PartialsLogger = DefaultPartialsLogger(),
   sessionManager: SessionManager = InMemorySessionManager("SESSION_MANAGER"),
   sessionConfig: SessionCookieConfig = createSessionCookieConfig(),
@@ -34,7 +34,7 @@ fun <S : PartialsSession> createPartialsServer(
   partialsLogger = logger
   maximumRequestSize = maxRequestSize
 
-  val defaultPage = mapping.firstOrNull()?.second ?: NotFoundPage::class
+  val defaultPage = mapping.firstOrNull()?.second ?: pageFactory<S, NoData> { NotFoundPage() }
 
   val resourceHandler = createStaticResourceHandler(resourceBasePath, resourceUrlPrefix)
   val partialsHandler = createPartialsHandler(defaultPage, session, resourceHandler, mapping)
@@ -54,6 +54,29 @@ fun <S : PartialsSession> createPartialsServer(
   return server
 }
 
+@JvmName("createPartialsServerWithClasses")
+fun <S : PartialsSession> createPartialsServer(
+  port: Int = 8080,
+  session: () -> S,
+  vararg mapping: Pair<String, KClass<*>>,
+  logger: PartialsLogger = DefaultPartialsLogger(),
+  sessionManager: SessionManager = InMemorySessionManager("SESSION_MANAGER"),
+  sessionConfig: SessionCookieConfig = createSessionCookieConfig(),
+  resourceBasePath: String = "static",
+  resourceUrlPrefix: String = "/static",
+  maxRequestSize: Long = maximumRequestSize // 100 MB limit
+): Undertow = createPartialsServer(
+  port,
+  session,
+  *mapping.map { it.first to reflectivePageFactory<S>(it.second) }.toTypedArray(),
+  logger = logger,
+  sessionManager = sessionManager,
+  sessionConfig = sessionConfig,
+  resourceBasePath = resourceBasePath,
+  resourceUrlPrefix = resourceUrlPrefix,
+  maxRequestSize = maxRequestSize
+)
+
 fun createSessionCookieConfig(): SessionCookieConfig = SessionCookieConfig().apply {
   isSecure = true
   isHttpOnly = true
@@ -69,10 +92,10 @@ fun createStaticResourceHandler(
 )
 
 fun <S : PartialsSession> createPartialsHandler(
-  defaultPage: KClass<out Any>,
+  defaultPage: PageFactory<S, *>,
   session: () -> S,
   next: StaticResourceHandler,
-  mapping: Array<out Pair<String, KClass<*>>>
+  mapping: Array<out Pair<String, PageFactory<S, *>>>
 ): PartialsHandler<S> = PartialsHandler(
   defaultPage,
   session,
@@ -89,6 +112,30 @@ fun <S : PartialsSession> createSessionHandler(
   sessionManager,
   sessionConfig
 )
+
+private fun <S : PartialsSession> reflectivePageFactory(
+  clazz: KClass<*>
+): PageFactory<S, *> {
+  val constructor = getNoArgConstructor(clazz)
+  val dataProperty = clazz.memberProperties.firstOrNull { it.name == "data" }
+    ?: error("Expected a data property on ${clazz.qualifiedName}")
+  val dataClass = dataProperty.returnType.classifier as? KClass<*>
+    ?: error("Type classifier is not a KClass (was: ${dataProperty.returnType.classifier})")
+
+  @Suppress("UNCHECKED_CAST")
+  return object : PageFactory<S, Serializable> {
+    override val dataClass: KClass<Serializable> = dataClass as KClass<Serializable>
+    override fun create(): PartialsPage<S, Serializable> = constructor.call() as PartialsPage<S, Serializable>
+  }
+}
+
+private fun getNoArgConstructor(clazz: KClass<*>): KFunction<Any> {
+  val constr = clazz.constructors.filter { it.parameters.isEmpty() }
+  if (constr.size != 1) {
+    error("Expected one no-arg constructor for a PartialsPage in ${clazz.qualifiedName}")
+  }
+  return constr.first()
+}
 
 fun createCompressionHandler(next: SessionAttachmentHandler): EncodingHandler? = EncodingHandler(
   ContentEncodingRepository()

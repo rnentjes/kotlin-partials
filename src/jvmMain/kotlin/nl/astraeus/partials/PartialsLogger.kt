@@ -21,7 +21,7 @@ class DefaultPartialsLogger : PartialsLogger {
   }
 
   override fun error(message: String, e: Throwable?) {
-    System.err.println(message)
+    System.err.println("Error: $message")
     e?.printStackTrace(System.err)
   }
 }
