@@ -11,10 +11,14 @@ import io.undertow.server.session.InMemorySessionManager
 import io.undertow.server.session.SessionAttachmentHandler
 import io.undertow.server.session.SessionCookieConfig
 import io.undertow.server.session.SessionManager
-import nl.astraeus.partials.web.*
+import nl.astraeus.partials.web.NotFoundPage
+import nl.astraeus.partials.web.PartialsHandler
+import nl.astraeus.partials.web.PartialsSession
+import nl.astraeus.partials.web.StaticResourceHandler
 import kotlin.reflect.KClass
 
 var partialsLogger: PartialsLogger = DefaultPartialsLogger()
+var maximumRequestSize: Long = 100 * 1024 * 1024
 
 fun <S : PartialsSession> createPartialsServer(
   port: Int = 8080,
@@ -25,9 +29,10 @@ fun <S : PartialsSession> createPartialsServer(
   sessionConfig: SessionCookieConfig = createSessionCookieConfig(),
   resourceBasePath: String = "static",
   resourceUrlPrefix: String = "/static",
-  maxRequestSize: Long = 100 * 1024 * 1024 // 100 MB limit
+  maxRequestSize: Long = maximumRequestSize // 100 MB limit
 ): Undertow {
   partialsLogger = logger
+  maximumRequestSize = maxRequestSize
 
   val defaultPage = mapping.firstOrNull()?.second ?: NotFoundPage::class
 
@@ -36,13 +41,14 @@ fun <S : PartialsSession> createPartialsServer(
   val sessionHandler = createSessionHandler(partialsHandler, sessionManager, sessionConfig)
   val compressionHandler = createCompressionHandler(sessionHandler)
   val canonicalPathHandler = CanonicalPathHandler(compressionHandler)
-  val limiter = RequestLimiter(canonicalPathHandler, maxRequestSize)
 
   val server = Undertow.builder()
     .addHttpListener(port, "localhost")
-    .setHandler(limiter)
+    .setHandler(canonicalPathHandler)
     .setServerOption(UndertowOptions.IDLE_TIMEOUT, 30000)
     .setServerOption(UndertowOptions.SHUTDOWN_TIMEOUT, 1000)
+    .setServerOption(UndertowOptions.MAX_ENTITY_SIZE, maximumRequestSize)
+    .setServerOption(UndertowOptions.MULTIPART_MAX_ENTITY_SIZE, maximumRequestSize)
     .build()
 
   return server

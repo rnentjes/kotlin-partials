@@ -3,7 +3,9 @@ package nl.astraeus.partials.web
 import io.undertow.server.HttpServerExchange
 import io.undertow.server.handlers.form.FormData
 import io.undertow.server.handlers.form.FormParserFactory
+import io.undertow.server.handlers.form.MultiPartParserDefinition
 import io.undertow.util.HttpString
+import nl.astraeus.partials.maximumRequestSize
 import java.util.concurrent.ConcurrentHashMap
 
 enum class RequestState {
@@ -93,7 +95,13 @@ class MultiPartDataRequest(
   override val files = mutableMapOf<String, FormData.FileItem>()
 
   init {
-    val parser = FormParserFactory.builder().build().createParser(exchange)
+    val mp = MultiPartParserDefinition()
+    mp.maxIndividualFileSize = maximumRequestSize
+    val parser = FormParserFactory.builder()
+      .addParser(mp)
+      .build()
+      .createParser(exchange)
+
     var formData = FormData(0)
     if (parser != null) {
       formData = parser.parseBlocking()
