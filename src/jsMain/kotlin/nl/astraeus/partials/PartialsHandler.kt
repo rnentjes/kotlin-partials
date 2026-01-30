@@ -189,8 +189,12 @@ object PartialsHandler {
 
       replaceElements(div)
 
-      for (script in newScripts) {
-        document.body?.appendChild(script)
+      window.requestAnimationFrame {
+        window.requestAnimationFrame {
+          for (script in newScripts) {
+            document.body?.appendChild(script)
+          }
+        }
       }
     } else {
       console.error("Received html does not contain exactly one root element.", html)

@@ -36,7 +36,9 @@ page should be updated. The page is rendered again completely, but only the part
 will be sent to the browser.
 
 ```kotlin
-class MyPage : PartialsPage<MySession, MyPageData>() {
+class MyPage : PartialsPage<MySession, MyPageData>(
+  { MyPageData() } // page data initializer
+) {
 
   override fun process(): String? {
     if (request.get("action") == "increment") {
@@ -68,6 +70,15 @@ class MyPage : PartialsPage<MySession, MyPageData>() {
 }
 ```
 
+#### Version 2.0
+
+In version 2.0 you don't need to define `request`, `session` and `data` parameters in the constructor anymore. These will now be
+set for you after the object is created. This means you cannot access these members in the constructor or init.
+
+If you need to initialize something with data from these members then overwrite the `onInit` method for this.
+
+There is Also the option to use components now. See [4. Components](#4-components)
+
 ### 2. Define your Session and Page data
 
 The page data is any state you want to maintain for a single page. It is serialized to the client and sent with every
@@ -96,13 +107,72 @@ Create and start the server. The first page in the mappings list will also be th
 fun main() {
   val server = createPartialsServer(
     port = 8080,
-    session = { MySession() },
+    session = { MySession() }, // session initializer
     "/index" to MyPage::class,
     "/other-page" to MyOtherPage::class,
   )
   server.start()
 }
 ```
+
+### 4. Components
+
+There are also components that you can include in a page to reuse code. For example, in our click example could look like this:
+
+```kotlin
+class MyPage : PartialsPage<MySession, MyPageData>(
+  { MyPageData() } // page data initializer
+) {
+
+  override fun Builder.content(exchange: HttpServerExchange) {
+    div {
+      h1 { +"Welcome, ${session.username}" }
+
+      include("counter-section", CounterComponent(data))
+
+      button {
+        // type button to prevent full page submit
+        type = ButtonType.button
+        onClick("action" to "increment")
+        +"Increment"
+      }
+    }
+  }
+}
+```
+
+```kotlin
+class CounterComponent(data: CounterData) : PartialsComponent() {
+
+  // id is passed from include so you can use the same component multiple times in a page
+  override fun process(id: String): String? {
+    if (request.get("action") == "increment") {
+      data.counter++
+
+      refresh(id)
+    }
+
+    return null
+  }
+
+  override fun Builder.content(exchange: HttpServerExchange) {
+    // each component is surrounded with a div with it's id
+    // id is passed to process function in PartialsComponent
+    // an css class for the div can be added to the call as well
+    span {
+      +"Counter: ${data.counter}"
+    }
+  }
+
+}
+```
+
+#### Redirect with components
+
+When rendering a page there are two passes. The first is to execute all process functions, the one in PartialsPage first and then on order
+of
+appearance in the html. As soon as any process in the PartialsPage or an included component returns a redirect,
+the processing stops and a redirect is sent to the client. In the second pass the action HTML content is rendered.
 
 ## Features
 

@@ -171,7 +171,7 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
 
   abstract fun Builder.content(exchange: HttpServerExchange)
 
-  fun Builder.include(id: String, component: PartialsComponent) {
+  fun Builder.include(id: String, component: PartialsComponent, cssClass: String? = null) {
     when (request.state) {
       RequestState.PROCESSING -> {
         request.components[id] = component
@@ -188,6 +188,9 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
       RequestState.RENDERING -> {
         div {
           this@div.id = id
+          cssClass?.also {
+            classes += it
+          }
 
           with((request.components[id] ?: component)) {
             content(request.exchange)
