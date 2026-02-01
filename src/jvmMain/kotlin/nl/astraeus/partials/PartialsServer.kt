@@ -3,6 +3,7 @@ package nl.astraeus.partials
 import io.undertow.Undertow
 import io.undertow.UndertowOptions
 import io.undertow.predicate.Predicates
+import io.undertow.server.HttpHandler
 import io.undertow.server.handlers.CanonicalPathHandler
 import io.undertow.server.handlers.encoding.ContentEncodingRepository
 import io.undertow.server.handlers.encoding.EncodingHandler
@@ -94,7 +95,7 @@ fun createStaticResourceHandler(
 fun <S : PartialsSession> createPartialsHandler(
   defaultPage: PageFactory<S, *>,
   session: () -> S,
-  next: StaticResourceHandler,
+  next: HttpHandler,
   mapping: Array<out Pair<String, PageFactory<S, *>>>
 ): PartialsHandler<S> = PartialsHandler(
   defaultPage,
@@ -113,7 +114,7 @@ fun <S : PartialsSession> createSessionHandler(
   sessionConfig
 )
 
-private fun <S : PartialsSession> reflectivePageFactory(
+fun <S : PartialsSession> reflectivePageFactory(
   clazz: KClass<*>
 ): PageFactory<S, *> {
   val constructor = getNoArgConstructor(clazz)

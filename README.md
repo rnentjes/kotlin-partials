@@ -18,7 +18,7 @@ When the event is triggered, the server processes it, and you can then choose to
 2. Refresh specific "partials" (parts of the page).
 3. Push updates via an SSE connection.
 
-This way the logic to process events and update html view is close together.
+This way the logic to process events and how it affects the html view is close together.
 
 ## Getting Started
 

@@ -15,8 +15,12 @@ fun main() {
 
   connectToEventSource()
 
-  // send timezone to server
-  PartialsHandler.sendPartialEvent()
+  window.requestAnimationFrame {
+    window.requestAnimationFrame {
+      // send timezone to server
+      PartialsHandler.sendPartialEvent()
+    }
+  }
 }
 
 private fun connectToEventSource() {

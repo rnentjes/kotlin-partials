@@ -158,7 +158,7 @@ object PartialsHandler {
         console.error("Request failed", error)
 
         window.alert("An error occurred while processing your request. Please try again later.")
-        window.location.reload()
+        //window.location.reload()
       }
       .finally {
         hideSplash()
@@ -176,7 +176,7 @@ object PartialsHandler {
     } else {
       console.error("Error: ${response.status}", response)
       window.alert("An error occurred while processing your request. Please try again later.")
-      window.location.reload()
+      //window.location.reload()
     }
   }
 
