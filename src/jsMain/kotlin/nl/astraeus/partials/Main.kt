@@ -3,6 +3,7 @@ package nl.astraeus.partials
 import kotlinx.browser.document
 import kotlinx.browser.window
 import nl.astraeus.partials.web.PARTIALS_CONNECTION_ID_HEADER
+import nl.astraeus.partials.web.PARTIALS_REQUEST_PATH
 import nl.astraeus.partials.web.PARTIALS_TIMEZONE_ID
 import org.w3c.dom.EventSource
 import org.w3c.dom.HTMLInputElement
@@ -27,7 +28,7 @@ private fun connectToEventSource() {
   val connectionIdInput = document.getElementById(PARTIALS_CONNECTION_ID_HEADER) as? HTMLInputElement
   if (connectionIdInput != null) {
     val eventSource = EventSource(
-      "/partials-sse?${PARTIALS_CONNECTION_ID_HEADER}=${connectionIdInput.value}"
+      "/partials-sse?${PARTIALS_CONNECTION_ID_HEADER}=${connectionIdInput.value}&${PARTIALS_REQUEST_PATH}=${window.location.pathname}"
     )
 
     eventSource.onmessage = { me ->

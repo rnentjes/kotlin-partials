@@ -21,6 +21,7 @@ class PartialsConnection(
   val eventQueue = LinkedBlockingQueue<String>()
   var lastSendTime = System.currentTimeMillis()
   val eventId = AtomicLong(1)
+  val request: Request = exchange.request()
 
   init {
     partialConnections[id] = this
