@@ -3,8 +3,24 @@ package nl.astraeus.partials.web
 import io.undertow.server.HttpHandler
 import io.undertow.server.HttpServerExchange
 import io.undertow.util.Headers
-import kotlinx.html.*
+import kotlinx.html.CoreAttributeGroupFacade
+import kotlinx.html.FormEncType
+import kotlinx.html.FormMethod
+import kotlinx.html.HTML
+import kotlinx.html.INPUT
+import kotlinx.html.InputType
+import kotlinx.html.body
+import kotlinx.html.classes
 import kotlinx.html.consumers.DelayedConsumer
+import kotlinx.html.div
+import kotlinx.html.form
+import kotlinx.html.head
+import kotlinx.html.html
+import kotlinx.html.id
+import kotlinx.html.input
+import kotlinx.html.main
+import kotlinx.html.script
+import kotlinx.html.title
 import nl.astraeus.partials.tag.HtmlBuilder
 import nl.astraeus.partials.tag.PartialsBuilder
 import nl.astraeus.partials.tag.PartialsProcessor
@@ -66,6 +82,10 @@ fun CoreAttributeGroupFacade.onKeyUp(vararg parameters: Pair<String, String>) = 
 
 fun CoreAttributeGroupFacade.onFileDrop(vararg parameters: Pair<String, String>) = doPost("file-drop", *parameters)
 
+fun CoreAttributeGroupFacade.onPasskeyRegister(vararg parameters: Pair<String, String>) = doPost("passkey-register", *parameters)
+
+fun CoreAttributeGroupFacade.onPasskeyLogin(vararg parameters: Pair<String, String>) = doPost("passkey-login", *parameters)
+
 fun INPUT.onEnter(vararg parameters: Pair<String, String>) {
   doPost("enter", *parameters)
 }
@@ -77,6 +97,9 @@ fun HttpServerExchange.isPartialsRequest(): Boolean {
 abstract class PartialsSession : Serializable {
   val id = System.currentTimeMillis().toString() + System.nanoTime().toString()
   var timezone: ZoneId = ZoneId.systemDefault()
+  var passkeyOptions: String? = null
+  var assertionRequest: String? = null
+  var passkeyUsername: String? = null
 }
 
 class NoData : Serializable

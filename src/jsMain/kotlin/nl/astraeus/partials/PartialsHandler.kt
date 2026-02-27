@@ -3,10 +3,21 @@ package nl.astraeus.partials
 import kotlinx.browser.document
 import kotlinx.browser.window
 import nl.astraeus.partials.web.PARTIALS_REQUEST_HEADER
-import org.w3c.dom.*
+import org.w3c.dom.DragEvent
+import org.w3c.dom.Element
+import org.w3c.dom.HTMLDivElement
+import org.w3c.dom.HTMLElement
+import org.w3c.dom.HTMLFormElement
+import org.w3c.dom.HTMLInputElement
+import org.w3c.dom.HTMLScriptElement
+import org.w3c.dom.HTMLTextAreaElement
 import org.w3c.dom.events.KeyboardEvent
 import org.w3c.dom.url.URLSearchParams
-import org.w3c.fetch.*
+import org.w3c.fetch.Headers
+import org.w3c.fetch.RequestCredentials
+import org.w3c.fetch.RequestInit
+import org.w3c.fetch.Response
+import org.w3c.fetch.SAME_ORIGIN
 import org.w3c.files.FileList
 import org.w3c.xhr.FormData
 
@@ -20,6 +31,8 @@ object PartialsHandler {
     "dblclick",
     "enter",
     "file-drop",
+    "passkey-register",
+    "passkey-login",
   )
 
   private var activeElement: Element? = null
@@ -100,6 +113,24 @@ object PartialsHandler {
               files
             )
           }
+        })
+      }
+
+      "passkey-register" -> {
+        element.addEventListener("click", { event ->
+          event.preventDefault()
+          event.stopPropagation()
+
+          PasskeyHandler.register()
+        })
+      }
+
+      "passkey-login" -> {
+        element.addEventListener("click", { event ->
+          event.preventDefault()
+          event.stopPropagation()
+
+          PasskeyHandler.login()
         })
       }
 

@@ -12,7 +12,16 @@ import io.undertow.server.session.InMemorySessionManager
 import io.undertow.server.session.SessionAttachmentHandler
 import io.undertow.server.session.SessionCookieConfig
 import io.undertow.server.session.SessionManager
-import nl.astraeus.partials.web.*
+import nl.astraeus.partials.web.NoData
+import nl.astraeus.partials.web.NotFoundPage
+import nl.astraeus.partials.web.PageFactory
+import nl.astraeus.partials.web.PartialsCredentialRepository
+import nl.astraeus.partials.web.PartialsHandler
+import nl.astraeus.partials.web.PartialsPage
+import nl.astraeus.partials.web.PartialsSession
+import nl.astraeus.partials.web.PasskeyHandler
+import nl.astraeus.partials.web.StaticResourceHandler
+import nl.astraeus.partials.web.pageFactory
 import java.io.Serializable
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
@@ -30,7 +39,8 @@ fun <S : PartialsSession> createPartialsServer(
   sessionConfig: SessionCookieConfig = createSessionCookieConfig(),
   resourceBasePath: String = "static",
   resourceUrlPrefix: String = "/static",
-  maxRequestSize: Long = maximumRequestSize // 100 MB limit
+  maxRequestSize: Long = maximumRequestSize, // 100 MB limit
+  credentialRepo: PartialsCredentialRepository? = null
 ): Undertow {
   partialsLogger = logger
   maximumRequestSize = maxRequestSize
@@ -39,7 +49,12 @@ fun <S : PartialsSession> createPartialsServer(
 
   val resourceHandler = createStaticResourceHandler(resourceBasePath, resourceUrlPrefix)
   val partialsHandler = createPartialsHandler(defaultPage, session, resourceHandler, mapping)
-  val sessionHandler = createSessionHandler(partialsHandler, sessionManager, sessionConfig)
+  val sessionHandler = if (credentialRepo != null) {
+    val passkeyHandler = createPasskeyHandler<S>(partialsHandler, credentialRepo)
+    createSessionHandler<S>(passkeyHandler, sessionManager, sessionConfig)
+  } else {
+    createSessionHandler<S>(partialsHandler, sessionManager, sessionConfig)
+  }
   val compressionHandler = createCompressionHandler(sessionHandler)
   val canonicalPathHandler = CanonicalPathHandler(compressionHandler)
 
@@ -65,7 +80,8 @@ fun <S : PartialsSession> createPartialsServer(
   sessionConfig: SessionCookieConfig = createSessionCookieConfig(),
   resourceBasePath: String = "static",
   resourceUrlPrefix: String = "/static",
-  maxRequestSize: Long = maximumRequestSize // 100 MB limit
+  maxRequestSize: Long = maximumRequestSize, // 100 MB limit
+  credentialRepo: PartialsCredentialRepository? = null,
 ): Undertow = createPartialsServer(
   port,
   session,
@@ -75,7 +91,8 @@ fun <S : PartialsSession> createPartialsServer(
   sessionConfig = sessionConfig,
   resourceBasePath = resourceBasePath,
   resourceUrlPrefix = resourceUrlPrefix,
-  maxRequestSize = maxRequestSize
+  maxRequestSize = maxRequestSize,
+  credentialRepo = credentialRepo
 )
 
 fun createSessionCookieConfig(): SessionCookieConfig = SessionCookieConfig().apply {
@@ -104,8 +121,24 @@ fun <S : PartialsSession> createPartialsHandler(
   *mapping
 )
 
+fun <S : PartialsSession> createPasskeyHandler(
+  next: HttpHandler,
+  credentialRepo: PartialsCredentialRepository,
+  registerBegin: String = "/partials/passkey/register/begin",
+  registerFinish: String = "/partials/passkey/register/finish",
+  loginBegin: String = "/partials/passkey/login/begin",
+  loginFinish: String = "/partials/passkey/login/finish",
+): HttpHandler = PasskeyHandler(
+  next,
+  credentialRepo,
+  registerBegin,
+  registerFinish,
+  loginBegin,
+  loginFinish,
+)
+
 fun <S : PartialsSession> createSessionHandler(
-  next: PartialsHandler<S>,
+  next: HttpHandler,
   sessionManager: SessionManager,
   sessionConfig: SessionCookieConfig
 ): SessionAttachmentHandler = SessionAttachmentHandler(

@@ -28,7 +28,8 @@ fun main() {
     { TestSession() },
     "/index" to IndexPage::class,
     "/dashboard" to DashboardPage::class,
-    sessionManager = sessionManager
+    sessionManager = sessionManager,
+    credentialRepo = InMemoryCredentialRepo(),
   )
 
   println("Start server op poort 2500")
