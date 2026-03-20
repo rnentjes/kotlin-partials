@@ -34,22 +34,6 @@ import kotlin.io.encoding.Base64
 
 typealias Builder = DelayedConsumer<String>
 
-fun String.decode(): Serializable {
-  val bytes = Base64.decode(this)
-  ObjectInputStream(bytes.inputStream()).use { ois ->
-    return ois.readObject() as Serializable
-  }
-}
-
-fun <D : Serializable> D.encode(): String {
-  val byteArrayOutputStream = ByteArrayOutputStream()
-  ObjectOutputStream(byteArrayOutputStream).use { oos ->
-    oos.writeObject(this)
-  }
-  val bytes = byteArrayOutputStream.toByteArray()
-  return Base64.encode(bytes)
-}
-
 private fun CoreAttributeGroupFacade.doPost(
   eventName: String,
   vararg parameters: Pair<String, String>
@@ -188,7 +172,23 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
       type = InputType.hidden
       id = "page-data"
       name = "page-data"
-      value = data.encode()
+      value = encodeData()
+    }
+  }
+
+  open fun encodeData(): String {
+    val byteArrayOutputStream = ByteArrayOutputStream()
+    ObjectOutputStream(byteArrayOutputStream).use { oos ->
+      oos.writeObject(data)
+    }
+    val bytes = byteArrayOutputStream.toByteArray()
+    return Base64.encode(bytes)
+  }
+
+  open fun decodeData(data: String) {
+    val bytes = Base64.decode(data)
+    ObjectInputStream(bytes.inputStream()).use { ois ->
+      this.data = ois.readObject() as T
     }
   }
 

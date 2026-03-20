@@ -7,7 +7,6 @@ import nl.astraeus.partials.partialsLogger
 import java.io.Serializable
 import java.lang.reflect.InvocationTargetException
 import kotlin.reflect.KClass
-import kotlin.reflect.cast
 
 interface PageFactory<S : PartialsSession, T : Serializable> {
   val dataClass: KClass<T>
@@ -77,15 +76,14 @@ class PartialsHandler<S : PartialsSession>(
         val typedFactory = factory as PageFactory<S, Serializable>
         val handler = typedFactory.create()
 
-        val data = if (request.pageData == null) {
-          handler.initialData.invoke()
-        } else {
-          (request.pageData as String).decode()
-        }
-
         handler.request = request
         handler.session = session
-        handler.data = typedFactory.dataClass.cast(data)
+
+        if (request.pageData != null) {
+          handler.decodeData(request.pageData as String)
+        } else {
+          handler.data = handler.initialData.invoke()
+        }
 
         handler.onInit()
 
