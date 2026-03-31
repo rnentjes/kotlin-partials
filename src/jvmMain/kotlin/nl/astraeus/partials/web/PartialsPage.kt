@@ -70,6 +70,10 @@ fun CoreAttributeGroupFacade.onPasskeyRegister(vararg parameters: Pair<String, S
 
 fun CoreAttributeGroupFacade.onPasskeyLogin(vararg parameters: Pair<String, String>) = doPost("passkey-login", *parameters)
 
+fun CoreAttributeGroupFacade.updateClass(clzz: String) {
+  this.attributes["data-p-class"] = clzz
+}
+
 fun INPUT.onEnter(vararg parameters: Pair<String, String>) {
   doPost("enter", *parameters)
 }

@@ -245,11 +245,27 @@ object PartialsHandler {
           document.getElementById(id)?.let { elementToUpdate ->
             updateHtml(elementToUpdate)
           }
+
+          window.requestAnimationFrame {
+            window.requestAnimationFrame {
+              updateClasses(child)
+            }
+          }
         } else {
           console.warn("Could not find element in the DOM to replace with id $id")
           child.remove()
         }
       }
+    }
+  }
+
+  private fun updateClasses(element: Element) {
+    val list = element.querySelectorAll("[data-p-class]") ?: return
+
+    repeat(list.length) { index ->
+      val element = list.item(index) as Element
+      val clz = element.getAttribute("data-p-class") ?: ""
+      element.className = clz
     }
   }
 
