@@ -45,3 +45,4 @@ bin/
 .kotlin
 kotlin-js-store
 gradle.properties
+.idea

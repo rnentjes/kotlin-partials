@@ -283,7 +283,18 @@ object PartialsHandler {
     return newScripts
   }
 
+  var inputSelectionStart = -1
+  var taSelectionStart = -1
+
   private fun showSplash() {
+    val ae = activeElement
+    if (ae is HTMLInputElement) {
+      inputSelectionStart = ae.selectionStart ?: -1
+    }
+    if (ae is HTMLTextAreaElement) {
+      taSelectionStart = ae.selectionStart ?: -1
+    }
+
     val splash = document.createElement("div") as HTMLDivElement
     with(splash.style) {
       position = "fixed"
@@ -291,14 +302,38 @@ object PartialsHandler {
       top = "0"
       width = "100%"
       height = "100%"
-      backgroundColor = "transparent"
       zIndex = "1000"
     }
     splash.id = "partials-splash"
     document.body?.appendChild(splash)
+
+    window.requestAnimationFrame {
+      splash.tabIndex = -1
+      splash.focus()
+      splash.className = "splash"
+    }
   }
 
   private fun hideSplash() {
     document.getElementById("partials-splash")?.remove()
+
+    activeElement?.id?.also { id ->
+      if (id.isNotBlank()) {
+        val elementById = document.getElementById(id)
+        (elementById as? HTMLElement)?.focus()
+        if (inputSelectionStart != -1) {
+          (elementById as? HTMLInputElement)?.setSelectionRange(
+            inputSelectionStart,
+            inputSelectionStart
+          )
+        }
+        if (taSelectionStart != -1) {
+          (elementById as? HTMLTextAreaElement)?.setSelectionRange(
+            taSelectionStart,
+            taSelectionStart
+          )
+        }
+      }
+    }
   }
 }

@@ -7,6 +7,7 @@ import nl.astraeus.partials.partialsLogger
 import nl.astraeus.partials.web.PartialsConnections.partialConnections
 import java.io.IOException
 import java.nio.ByteBuffer
+import java.nio.channels.ClosedChannelException
 import java.util.concurrent.atomic.AtomicBoolean
 
 object SenderTask : Runnable {
@@ -75,6 +76,23 @@ object SenderTask : Runnable {
     }
 
   }
+
+  internal fun isExpectedDisconnect(exception: Throwable?): Boolean {
+    if (exception == null) return false
+
+    if (exception is ClosedChannelException) return true
+
+    val message = exception.message.orEmpty()
+    if ("Broken pipe" in message || "Connection reset by peer" in message) return true
+
+    return isExpectedDisconnect(exception.cause)
+  }
+
+  internal fun closeConnection(connection: PartialsConnection, reason: String) {
+    connection.isOpen.set(false)
+    partialConnections.remove(connection.id)
+    partialsLogger.trace("Connection ${connection.id} closed: $reason")
+  }
 }
 
 class NoOpEventCallback(
@@ -89,8 +107,12 @@ class NoOpEventCallback(
     sender: Sender?,
     exception: IOException?
   ) {
-    exception?.printStackTrace()
-    connection.isOpen.set(false)
+    if (SenderTask.isExpectedDisconnect(exception)) {
+      SenderTask.closeConnection(connection, "async send failed because client disconnected")
+    } else {
+      SenderTask.closeConnection(connection, "async send failed")
+      partialsLogger.error(exception?.message ?: "Error", exception)
+    }
   }
 
 }
