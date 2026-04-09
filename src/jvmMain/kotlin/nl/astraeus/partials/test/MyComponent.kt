@@ -5,22 +5,22 @@ import kotlinx.html.div
 import kotlinx.html.input
 import nl.astraeus.partials.web.Builder
 import nl.astraeus.partials.web.PartialsComponent
-import nl.astraeus.partials.web.Request
+import nl.astraeus.partials.web.PartialsPage
 import nl.astraeus.partials.web.onClick
 
 class MyComponent(
-  val request: Request
-) : PartialsComponent() {
+  page: PartialsPage<*, *>
+) : PartialsComponent(page) {
   var myComponentValue: String = ""
 
   override fun process(id: String): String? {
-    myComponentValue = request.get("my-component-value") ?: ""
+    myComponentValue = page.request.get("my-component-value") ?: ""
 
-    if (request.get("action") == "redirect-from-my-component") {
+    if (page.request.get("action") == "redirect-from-my-component") {
       return "/index"
     }
 
-    if (request.get("action") == "update-my-component-value") {
+    if (page.request.get("action") == "update-my-component-value") {
       myComponentValue += myComponentValue.length.toString()
       refresh(id)
     }

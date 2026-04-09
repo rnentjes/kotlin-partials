@@ -1,8 +1,22 @@
 package nl.astraeus.partials.test
 
 import io.undertow.server.HttpServerExchange
-import kotlinx.html.*
-import nl.astraeus.partials.web.*
+import kotlinx.html.InputType
+import kotlinx.html.a
+import kotlinx.html.br
+import kotlinx.html.div
+import kotlinx.html.h1
+import kotlinx.html.hr
+import kotlinx.html.id
+import kotlinx.html.input
+import kotlinx.html.role
+import kotlinx.html.span
+import kotlinx.html.style
+import nl.astraeus.partials.web.Builder
+import nl.astraeus.partials.web.onChange
+import nl.astraeus.partials.web.onClick
+import nl.astraeus.partials.web.onEnter
+import nl.astraeus.partials.web.onFileDrop
 import java.io.Serializable
 
 class DashboardData(
@@ -145,7 +159,7 @@ class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
 
       hr()
 
-      include("my-component", MyComponent(request))
+      include("my-component", MyComponent(this@DashboardPage))
     }
   }
 

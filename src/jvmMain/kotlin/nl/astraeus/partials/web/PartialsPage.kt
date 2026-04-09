@@ -92,7 +92,9 @@ abstract class PartialsSession : Serializable {
 
 class NoData : Serializable
 
-abstract class PartialsComponent {
+abstract class PartialsComponent(
+  val page: PartialsPage<*, *>
+) {
   internal val partials: MutableSet<String> = mutableSetOf()
 
   fun refresh(id: String) {
@@ -102,6 +104,10 @@ abstract class PartialsComponent {
   abstract fun process(id: String): String?
 
   abstract fun Builder.content(exchange: HttpServerExchange)
+
+  fun Builder.include(id: String, component: PartialsComponent, cssClass: String? = null) {
+    componentInclude(page, id, component, this@include, cssClass)
+  }
 }
 
 abstract class PartialsPage<S : PartialsSession, T : Serializable>(
@@ -199,36 +205,7 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
   abstract fun Builder.content(exchange: HttpServerExchange)
 
   fun Builder.include(id: String, component: PartialsComponent, cssClass: String? = null) {
-    when (request.state) {
-      RequestState.PROCESSING -> {
-        request.components[id] = component
-        val redirect = component.process(id)
-        if (redirect != null) {
-          request.state = RequestState.REDIRECTED
-          request.redirectUrl = redirect
-          return
-        } else {
-          partials.addAll(component.partials)
-        }
-      }
-
-      RequestState.RENDERING -> {
-        div {
-          this@div.id = id
-          cssClass?.also {
-            classes += it
-          }
-
-          with((request.components[id] ?: component)) {
-            content(request.exchange)
-          }
-        }
-      }
-
-      RequestState.REDIRECTED -> {
-        // nothing to do here
-      }
-    }
+    componentInclude(this@PartialsPage, id, component, this@include, cssClass)
   }
 
   open fun Builder.render(exchange: HttpServerExchange) {
@@ -298,5 +275,44 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
     }
 
     return ByteBuffer.wrap(concat.toString().toByteArray(Charsets.UTF_8))
+  }
+}
+
+private fun <S : PartialsSession, T : Serializable> componentInclude(
+  page: PartialsPage<S, T>,
+  id: String,
+  component: PartialsComponent,
+  consumer: Builder,
+  cssClass: String?
+) {
+  when (page.request.state) {
+    RequestState.PROCESSING -> {
+      page.request.components[id] = component
+      val redirect = component.process(id)
+      if (redirect != null) {
+        page.request.state = RequestState.REDIRECTED
+        page.request.redirectUrl = redirect
+        return
+      } else {
+        page.partials.addAll(component.partials)
+      }
+    }
+
+    RequestState.RENDERING -> {
+      consumer.div {
+        this@div.id = id
+        cssClass?.also {
+          classes += it
+        }
+
+        with((page.request.components[id] ?: component)) {
+          consumer.content(page.request.exchange)
+        }
+      }
+    }
+
+    RequestState.REDIRECTED -> {
+      // nothing to do here
+    }
   }
 }
