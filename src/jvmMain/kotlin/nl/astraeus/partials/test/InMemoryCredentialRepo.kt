@@ -1,26 +1,26 @@
 package nl.astraeus.partials.test
 
 import com.yubico.webauthn.RegisteredCredential
-import com.yubico.webauthn.data.ByteArray
 import com.yubico.webauthn.data.PublicKeyCredentialDescriptor
 import nl.astraeus.partials.web.PartialsCredentialRepository
+import nl.astraeus.partials.web.WebAuthByteArray
 import java.util.*
 
 data class CredentialStore(
-  val credentialId: ByteArray,
-  val userHandle: ByteArray,
+  val credentialId: WebAuthByteArray,
+  val userHandle: WebAuthByteArray,
   val username: String,
-  val publicKeyCose: ByteArray,
+  val publicKeyCose: WebAuthByteArray,
   val signatureCount: Long,
 )
 
-class InMemoryCredentialRepo : PartialsCredentialRepository() {
-  override val domain: String = "localhost"
-  override val applicationName: String = "Partials Test"
-  override val origins: Set<String> = setOf("http://localhost:2500")
-
+class InMemoryCredentialRepo(
+  override val domain: String = "localhost",
+  override val applicationName: String = "Partials Test",
+  override val origins: Set<String> = setOf("http://localhost:2500"),
+) : PartialsCredentialRepository() {
   // username → user handle
-  private val userHandles = mutableMapOf<String, ByteArray>()
+  private val userHandles = mutableMapOf<String, WebAuthByteArray>()
 
   // username → set of stored credentials
   private val credentialsByUsername = mutableMapOf<String, MutableSet<CredentialStore>>()
@@ -33,9 +33,9 @@ class InMemoryCredentialRepo : PartialsCredentialRepository() {
    */
   override fun addCredential(
     username: String,
-    userHandle: ByteArray,
-    credentialId: ByteArray,
-    publicKeyCose: ByteArray,
+    userHandle: WebAuthByteArray,
+    credentialId: WebAuthByteArray,
+    publicKeyCose: WebAuthByteArray,
     signatureCount: Long,
   ) {
     val store = CredentialStore(
@@ -54,7 +54,7 @@ class InMemoryCredentialRepo : PartialsCredentialRepository() {
   /**
    * Call this after a successful authentication to update the signature counter.
    */
-  override fun updateSignatureCount(credentialId: ByteArray, newCount: Long) {
+  override fun updateSignatureCount(credentialId: WebAuthByteArray, newCount: Long) {
     val key = credentialId.base64Url
     val existing = credentialsById[key] ?: return
     val updated = existing.copy(signatureCount = newCount)
@@ -74,19 +74,19 @@ class InMemoryCredentialRepo : PartialsCredentialRepository() {
     }?.toSet() ?: emptySet()
   }
 
-  override fun getUserHandleForUsername(username: String?): Optional<ByteArray> {
+  override fun getUserHandleForUsername(username: String?): Optional<WebAuthByteArray> {
     if (username == null) return Optional.empty()
     return Optional.ofNullable(userHandles[username])
   }
 
-  override fun getUsernameForUserHandle(userHandle: ByteArray): Optional<String> {
+  override fun getUsernameForUserHandle(userHandle: WebAuthByteArray): Optional<String> {
     val username = userHandles.entries.firstOrNull { it.value == userHandle }?.key
     return Optional.ofNullable(username)
   }
 
   override fun lookup(
-    credentialId: ByteArray,
-    userHandle: ByteArray
+    credentialId: WebAuthByteArray,
+    userHandle: WebAuthByteArray
   ): Optional<RegisteredCredential> {
     val store = credentialsById[credentialId.base64Url] ?: return Optional.empty()
 
@@ -100,7 +100,7 @@ class InMemoryCredentialRepo : PartialsCredentialRepository() {
     )
   }
 
-  override fun lookupAll(credentialId: ByteArray): Set<RegisteredCredential> {
+  override fun lookupAll(credentialId: WebAuthByteArray): Set<RegisteredCredential> {
     val store = credentialsById[credentialId.base64Url] ?: return emptySet()
 
     return setOf(

@@ -7,7 +7,6 @@ import com.yubico.webauthn.RelyingParty
 import com.yubico.webauthn.StartAssertionOptions
 import com.yubico.webauthn.StartRegistrationOptions
 import com.yubico.webauthn.data.AuthenticatorSelectionCriteria
-import com.yubico.webauthn.data.ByteArray
 import com.yubico.webauthn.data.PublicKeyCredential
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions
 import com.yubico.webauthn.data.RelyingPartyIdentity
@@ -72,7 +71,7 @@ class PasskeyHandler(
 
     val request = exchange.request()
     val username = request.get("passkey-username")
-    val userHandle = ByteArray(ByteArray(32).also { random.nextBytes(it) })
+    val userHandle = WebAuthByteArray(ByteArray(32).also { random.nextBytes(it) })
 
     if (username == null) {
       // return error

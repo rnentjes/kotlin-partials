@@ -2,6 +2,7 @@ package nl.astraeus.partials
 
 import kotlinx.browser.document
 import kotlinx.browser.window
+import nl.astraeus.partials.PartialsHandler.sendPartialEvent
 import org.khronos.webgl.Uint8Array
 import org.w3c.dom.HTMLInputElement
 import org.w3c.fetch.Headers
@@ -77,7 +78,11 @@ object PasskeyHandler {
 
     val usernames = document.getElementsByName("passkey-username")
     if (usernames.length > 0) {
-      val username = (usernames.item(0) as? HTMLInputElement)?.value ?: error("No username provided")
+      val username = (usernames.item(0) as? HTMLInputElement)?.value
+      if (username.isNullOrEmpty()) {
+        sendPartialEvent("register=failed&reason=No username given")
+        return
+      }
       val requestInit = RequestInit(
         method = "POST",
         headers = headers,
@@ -103,7 +108,13 @@ object PasskeyHandler {
                 body = "json=" + enc(JSON.stringify(credential))
               )
 
-              window.fetch("/partials/passkey/register/finish", finishRequestInit)
+              window.fetch("/partials/passkey/register/finish", finishRequestInit).then { resp ->
+                if (resp.ok) {
+                  sendPartialEvent("register=success")
+                } else {
+                  sendPartialEvent("register=failed&reason=Check server log")
+                }
+              }
             }
           }
         }
@@ -138,6 +149,7 @@ object PasskeyHandler {
           val promise = window.navigator.asDynamic().credentials.get(getOptions)
 
           promise.then { credential ->
+            console.log("credential", credential)
             // 3. Send the result back to your server
             val finishHeaders = Headers().apply {
               append("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
@@ -150,7 +162,13 @@ object PasskeyHandler {
               body = "json=" + enc(JSON.stringify(credential))
             )
 
-            window.fetch("/partials/passkey/login/finish", finishRequestInit)
+            window.fetch("/partials/passkey/login/finish", finishRequestInit).then { resp ->
+              if (resp.ok) {
+                sendPartialEvent("login=success")
+              } else {
+                sendPartialEvent("login=failed&reason=Check server log")
+              }
+            }
           }
         }
       }

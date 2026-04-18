@@ -1,7 +1,8 @@
 package nl.astraeus.partials.web
 
 import com.yubico.webauthn.CredentialRepository
-import com.yubico.webauthn.data.ByteArray
+
+typealias WebAuthByteArray = com.yubico.webauthn.data.ByteArray
 
 abstract class PartialsCredentialRepository : CredentialRepository {
   abstract val domain: String
@@ -13,11 +14,11 @@ abstract class PartialsCredentialRepository : CredentialRepository {
    */
   abstract fun addCredential(
     username: String,
-    userHandle: ByteArray,
-    credentialId: ByteArray,
-    publicKeyCose: ByteArray,
+    userHandle: WebAuthByteArray,
+    credentialId: WebAuthByteArray,
+    publicKeyCose: WebAuthByteArray,
     signatureCount: Long,
   )
 
-  abstract fun updateSignatureCount(credentialId: ByteArray, newCount: Long)
+  abstract fun updateSignatureCount(credentialId: WebAuthByteArray, newCount: Long)
 }
