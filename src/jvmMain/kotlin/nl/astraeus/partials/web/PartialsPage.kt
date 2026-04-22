@@ -126,10 +126,6 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
     return null
   }
 
-  fun refresh(func: RenderFunction, data: Any? = null, id: Long = 0, last: Boolean = false) {
-    functionToRefresh.add(RefreshFunction(func, data, id, last))
-  }
-
   override fun handleRequest(exchange: HttpServerExchange) {
     request.value(PARTIALS_TIMEZONE_ID) { id ->
       session.timezone = ZoneId.of(id)
@@ -180,6 +176,10 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
   }
 
   abstract fun Builder.content(exchange: HttpServerExchange)
+
+  fun refresh(func: RenderFunction, data: Any? = null, id: Long = 0, last: Boolean = false) {
+    functionToRefresh.add(RefreshFunction(func, data, id, last))
+  }
 
   fun Builder.partial(func: RenderFunction, data: Any? = null, id: Long = 0) {
     renderPartialFunction(
