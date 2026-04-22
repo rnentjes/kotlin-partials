@@ -13,6 +13,10 @@ import kotlinx.html.role
 import kotlinx.html.span
 import kotlinx.html.style
 import nl.astraeus.partials.web.Builder
+import nl.astraeus.partials.web.PartialComponent
+import nl.astraeus.partials.web.PartialKey
+import nl.astraeus.partials.web.RenderFunction
+import nl.astraeus.partials.web.Request
 import nl.astraeus.partials.web.onChange
 import nl.astraeus.partials.web.onClick
 import nl.astraeus.partials.web.onEnter
@@ -32,11 +36,71 @@ class DashboardData(
   }
 }
 
-class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
+enum class DashboardKey : PartialKey {
+  PAGE_CONTAINER,
+  DROPPED_FILES,
+  HELLO,
+  SESSION_INFO,
+  PAGE_TITLE,
+  MY_COMPONENT,
+  ;
+}
+
+class MyComponent : PartialComponent<TestSession, DashboardData>() {
+
+  override fun process(
+    request: Request,
+    session: TestSession,
+    pageData: DashboardData
+  ) {
+    println("MyComponent.process")
+
+    if (request.get("action") == "click_component") {
+      pageData.count++
+      pageData.title = "Clicker! [clicked me ${pageData.count} times!] <MyComponent action>"
+
+      refresh(DashboardKey.HELLO)
+    }
+  }
+
+  override fun Builder.content(
+    session: TestSession,
+    pageData: DashboardData,
+    data: Any?,
+    id: Long
+  ) {
+    div {
+      div {
+        +"This is my component: $data"
+      }
+      div {
+        input {
+          type = InputType.button
+          name = "action"
+          value = "Click"
+
+          onClick("action" to "click_component")
+        }
+      }
+    }
+  }
+
+}
+
+class DashboardPage : HeadPage<DashboardData, DashboardKey>({ DashboardData() }) {
   var filesDropped: String = ""
 
+  override fun onInit() {
+    partial(DashboardKey.PAGE_CONTAINER, { _, _ -> this.pageContainer() })
+    partial(DashboardKey.DROPPED_FILES) { _, _ -> this.droppedFiles() }
+    partial(DashboardKey.HELLO) { _, _ -> this.hello() }
+    partial(DashboardKey.SESSION_INFO) { data, id -> this.sessionInfo(data) }
+    partial(DashboardKey.MY_COMPONENT, MyComponent())
+  }
+
   override fun process(): String? {
-    refresh("dropped-files")
+    refresh(DashboardKey.DROPPED_FILES)
+    refresh(DashboardKey.SESSION_INFO, "Mamaloe", id = 2)
 
     request.value("action") { value ->
       when (value) {
@@ -46,18 +110,14 @@ class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
 
           pageTitle = "Click ${data.count}"
 
-          refresh("page-title")
-          refresh("hello")
-        }
-
-        "update-title" -> {
-          pageTitle = "Update title"
-          refresh("page-title")
+          //refresh("page-title")
+          refresh(DashboardKey.HELLO)
+          refresh(functionTest, "From Process!")
         }
 
         "input-change" -> {
           data.inputValue = request.data["input-value"] ?: ""
-          refresh("page-container")
+          refresh(DashboardKey.PAGE_CONTAINER)
         }
 
         "drop-file", "upload" -> {
@@ -65,7 +125,6 @@ class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
           for ((name, _) in request.files) {
             filesDropped += "$name "
           }
-          refresh("page-container")
         }
       }
     }
@@ -74,34 +133,21 @@ class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
   }
 
   override fun Builder.content(exchange: HttpServerExchange) {
-    div {
-      id = "page-container"
+    partial(DashboardKey.PAGE_CONTAINER)
+  }
 
+  fun Builder.pageContainer() {
+    div {
       h1 {
         +"Dashboard"
       }
 
       div {
-        div {
-          id = "hello"
-          role = "button"
+        partial(DashboardKey.HELLO)
 
-          onClick("action" to "hello")
-
-          +data.title
-        }
         span {
           +"Some extra blaat"
         }
-      }
-
-      div {
-        id = "update-title"
-        role = "button"
-
-        onClick("action" to "update-title")
-
-        +"[Click to update page title]"
       }
 
       div {
@@ -141,25 +187,53 @@ class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
           +"Upload"
         }
       }
-      br
-      div {
-        id = "dropped-files"
-
-        if (filesDropped.isNotEmpty()) {
-          +"Files dropped/uploaded: $filesDropped"
-        } else {
-          +""
-        }
-      }
-      br
+      hr {}
+      partial(DashboardKey.DROPPED_FILES)
+      hr {}
+      partial(DashboardKey.SESSION_INFO, 1, 1)
+      partial(DashboardKey.SESSION_INFO, "Pipo!", 2)
+      hr {}
       a {
         href = "/index"
         +"Index"
       }
+      hr {}
+      partial(DashboardKey.MY_COMPONENT, "MyCompDat")
+      hr {}
+      partial(functionTest, "Func Test!")
+    }
+  }
 
-      hr()
+  val functionTest: RenderFunction = { page, data, id ->
+    div {
+      +"Function!! $data"
+    }
+  }
 
-      include("my-component", MyComponent(this@DashboardPage))
+  fun Builder.droppedFiles() {
+    div {
+      if (filesDropped.isNotEmpty()) {
+        +"Files dropped/uploaded: $filesDropped"
+      } else {
+        +"No dropped files"
+      }
+    }
+  }
+
+  fun Builder.hello() {
+    div {
+      role = "button"
+
+      onClick("action" to "hello")
+
+      +data.title
+    }
+  }
+
+  fun Builder.sessionInfo(data: Any?) {
+    div {
+      id = "pipo"
+      +"Session id: ${session.id} - ${data ?: "No data"}"
     }
   }
 

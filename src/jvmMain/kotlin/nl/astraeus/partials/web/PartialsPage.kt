@@ -11,7 +11,6 @@ import kotlinx.html.INPUT
 import kotlinx.html.InputType
 import kotlinx.html.body
 import kotlinx.html.classes
-import kotlinx.html.consumers.DelayedConsumer
 import kotlinx.html.div
 import kotlinx.html.form
 import kotlinx.html.head
@@ -22,8 +21,8 @@ import kotlinx.html.main
 import kotlinx.html.script
 import kotlinx.html.title
 import nl.astraeus.partials.tag.HtmlBuilder
-import nl.astraeus.partials.tag.PartialsBuilder
-import nl.astraeus.partials.tag.PartialsProcessor
+import nl.astraeus.partials.tag.IdInjectConsumer
+import nl.astraeus.partials.util.Hasher
 import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
@@ -31,8 +30,27 @@ import java.io.Serializable
 import java.nio.ByteBuffer
 import java.time.ZoneId
 import kotlin.io.encoding.Base64
+import kotlin.reflect.KClass
 
-typealias Builder = DelayedConsumer<String>
+typealias Builder = IdInjectConsumer
+typealias PartialRenderer = Builder.(Any?, Long) -> Unit
+typealias RenderFunction = Builder.(PartialsPage<*, *, *>, Any?, Long) -> Unit
+
+abstract class PartialComponent<S : PartialsSession, T : Serializable> {
+  internal val partialsToRefresh = mutableSetOf<RefreshPartial>()
+
+  fun refresh(key: PartialKey, data: Any? = null, id: Long = 0) {
+    partialsToRefresh.add(RefreshPartial(key, data, id))
+  }
+
+  abstract fun process(request: Request, session: S, pageData: T)
+
+  fun render(consumer: Builder, session: S, pageData: T, data: Any?, id: Long) {
+    consumer.content(session, pageData, data, id)
+  }
+
+  abstract fun Builder.content(session: S, pageData: T, data: Any?, id: Long)
+}
 
 private fun CoreAttributeGroupFacade.doPost(
   eventName: String,
@@ -92,25 +110,31 @@ abstract class PartialsSession : Serializable {
 
 class NoData : Serializable
 
-abstract class PartialsComponent(
-  val page: PartialsPage<*, *>
-) {
-  internal val partials: MutableSet<String> = mutableSetOf()
+interface PartialKey {
+  val name: String
 
-  fun refresh(id: String) {
-    partials.add(id)
-  }
-
-  abstract fun process(id: String): String?
-
-  abstract fun Builder.content(exchange: HttpServerExchange)
-
-  fun Builder.include(id: String, component: PartialsComponent, cssClass: String? = null) {
-    componentInclude(page, id, component, this@include, cssClass)
-  }
+  fun id(): String = this.name.lowercase().replace('_', '-')
 }
 
-abstract class PartialsPage<S : PartialsSession, T : Serializable>(
+data class RefreshPartial(
+  val key: PartialKey,
+  val data: Any? = null,
+  val id: Long = 0
+)
+
+data class RefreshFunction(
+  val func: RenderFunction,
+  val data: Any? = null,
+  val id: Long = 0,
+  val last: Boolean = false,
+)
+
+enum class PageDataKey : PartialKey {
+  PAGE_DATA,
+  ;
+}
+
+abstract class PartialsPage<S : PartialsSession, T : Serializable, K : PartialKey>(
   val initialData: () -> T
 ) : HttpHandler {
   lateinit var request: Request
@@ -126,18 +150,40 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
     }
   }
 
-  internal val partials = mutableSetOf("page-data")
+  internal val partialsToRefresh = mutableSetOf<RefreshPartial>()
+  internal val functionToRefresh = mutableSetOf<RefreshFunction>()
+  internal val partials = mutableMapOf<PartialKey, PartialRenderer>()
+  internal val partialComponents = mutableMapOf<PartialKey, PartialComponent<S, T>>()
 
   fun getPartialsConnection() = PartialsConnections.partialConnections[connectionId]
 
   open fun onInit() {}
 
+  fun partial(name: PartialKey, renderer: PartialRenderer) {
+    check(!partials.containsKey(name)) { "Partial $name already define for ${this::class.simpleName}" }
+
+    partials[name] = renderer
+  }
+
+  fun partial(name: PartialKey, renderer: PartialComponent<S, T>) {
+    check(!partials.containsKey(name)) { "Partial $name already define for ${this::class.simpleName}" }
+
+    partialComponents[name] = renderer
+  }
+
   open fun process(): String? {
     return null
   }
 
-  fun refresh(vararg parts: String) {
-    partials.addAll(parts)
+  fun refresh(key: PartialKey, data: Any? = null, id: Long = 0) {
+    check(partials.containsKey(key)) {
+      "Partial `$key` not defined in ${this@PartialsPage::class.simpleName}"
+    }
+    partialsToRefresh.add(RefreshPartial(key, data, id))
+  }
+
+  fun refresh(func: RenderFunction, data: Any? = null, id: Long = 0, last: Boolean = false) {
+    functionToRefresh.add(RefreshFunction(func, data, id, last))
   }
 
   override fun handleRequest(exchange: HttpServerExchange) {
@@ -156,7 +202,6 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
         exchange.responseHeaders.put(Headers.LOCATION, redirectUrl)
       }
     } else {
-      request.state = RequestState.RENDERING
       exchange.responseHeaders.put(Headers.CONTENT_TYPE, "text/html; charset=UTF-8")
       val content = generateContent(exchange)
       exchange.responseSender.send(content)
@@ -164,25 +209,21 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
   }
 
   private fun runProcessing(): String? {
-    val redirect = process()
-    if (redirect != null) {
-      return redirect
+    for ((_, component) in partialComponents) {
+      component.process(request, this.session, this.data)
     }
-    val bldr = PartialsProcessor()
-    val consumer = DelayedConsumer(bldr)
 
-    request.state = RequestState.PROCESSING
-    consumer.render(request.exchange)
-
-    return request.redirectUrl
+    return process()
   }
 
-  private fun Builder.renderDataInput(update: Boolean) {
-    input {
-      type = InputType.hidden
+  private fun Builder.renderDataInput() {
+    div {
       id = "page-data"
-      name = "page-data"
-      value = encodeData()
+      input {
+        type = InputType.hidden
+        name = "page-data"
+        value = encodeData()
+      }
     }
   }
 
@@ -204,8 +245,40 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
 
   abstract fun Builder.content(exchange: HttpServerExchange)
 
-  fun Builder.include(id: String, component: PartialsComponent, cssClass: String? = null) {
-    componentInclude(this@PartialsPage, id, component, this@include, cssClass)
+  fun Builder.partial(key: PartialKey, data: Any? = null, id: Long = 0) {
+    check(partials.containsKey(key) || partialComponents.containsKey(key)) {
+      "Partial `$key` not defined in ${this@PartialsPage::class.simpleName}"
+    }
+    partials[key]?.also { partial ->
+      renderPartial(key, data, id, partial)
+    }
+    partialComponents[key]?.also { partial ->
+      renderPartial(key, session, this@PartialsPage.data, data, id, partial)
+    }
+  }
+
+  fun Builder.partial(func: RenderFunction, data: Any? = null, id: Long = 0) {
+    renderPartialFunction(
+      this@partial,
+      RefreshFunction(func, data, id)
+    )
+  }
+
+  fun KClass<*>.nameId(): String {
+    return Hasher.stableShortId(this.toString())
+  }
+
+  fun renderPartialFunction(consumer: Builder, rf: RefreshFunction) {
+    val functionName = rf.func::class.nameId()
+
+    val elementId = functionName + if (rf.id > 0L) {
+      "-${rf.id}"
+    } else {
+      ""
+    }
+
+    consumer.inject(elementId)
+    rf.func.invoke(consumer, this@PartialsPage, rf.data, rf.id)
   }
 
   open fun Builder.render(exchange: HttpServerExchange) {
@@ -219,7 +292,7 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
 
             this@render.content(exchange)
 
-            renderDataInput(false)
+            renderDataInput()
             input {
               type = InputType.hidden
               id = PARTIALS_CONNECTION_ID_HEADER
@@ -253,22 +326,60 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
   }
 
   fun generateContent(exchange: HttpServerExchange): ByteBuffer {
-    val bldr = if (exchange.isPartialsRequest()) {
-      PartialsBuilder(partials, prettyPrint = true, xhtmlCompatible = true)
-    } else {
-      HtmlBuilder(prettyPrint = true, xhtmlCompatible = true)
-    }
-    val consumer = DelayedConsumer(bldr)
+    val bldr = HtmlBuilder(prettyPrint = true, xhtmlCompatible = true)
+    val consumer = Builder(bldr)
 
-    consumer.render(exchange)
+    if (exchange.isPartialsRequest()) {
+      consumer.div {
+        title = "Partials container"
+        val refreshers = mutableSetOf<RefreshPartial>()
+        for ((key, component) in partialComponents) {
+          refreshers.addAll(component.partialsToRefresh)
+        }
+        refreshers.addAll(partialsToRefresh)
+        for (refresh in refreshers) {
+          partials[refresh.key]?.also { prt ->
+            consumer.renderPartial(
+              refresh.key,
+              refresh.data,
+              refresh.id,
+              prt
+            )
+          }
+          partialComponents[refresh.key]?.also { partial ->
+            consumer.renderPartial(
+              refresh.key,
+              session,
+              this@PartialsPage.data,
+              refresh.data,
+              refresh.id,
+              partial
+            )
+          }
+        }
+
+        for (rf in functionToRefresh) {
+          if (!rf.last) {
+            renderPartialFunction(consumer, rf)
+          }
+        }
+        for (rf in functionToRefresh) {
+          if (rf.last) {
+            renderPartialFunction(consumer, rf)
+          }
+        }
+
+        consumer.renderDataInput()
+      }
+    } else {
+      consumer.render(exchange)
+    }
 
     val result = consumer.finalize()
     val concat = StringBuilder()
 
     if (exchange.isPartialsRequest()) {
-      concat.append("<div>\n")
       concat.append(result)
-      concat.append("\n</div>")
     } else {
       concat.append("<!DOCTYPE html>\n")
       concat.append(result)
@@ -276,43 +387,38 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
 
     return ByteBuffer.wrap(concat.toString().toByteArray(Charsets.UTF_8))
   }
-}
 
-private fun <S : PartialsSession, T : Serializable> componentInclude(
-  page: PartialsPage<S, T>,
-  id: String,
-  component: PartialsComponent,
-  consumer: Builder,
-  cssClass: String?
-) {
-  when (page.request.state) {
-    RequestState.PROCESSING -> {
-      page.request.components[id] = component
-      val redirect = component.process(id)
-      if (redirect != null) {
-        page.request.state = RequestState.REDIRECTED
-        page.request.redirectUrl = redirect
-        return
-      } else {
-        page.partials.addAll(component.partials)
-      }
+  private fun Builder.renderPartial(
+    key: PartialKey,
+    data: Any?,
+    id: Long,
+    prt: PartialRenderer
+  ) {
+    val elementId = key.id() + if (id > 0) {
+      "-${id}"
+    } else {
+      ""
     }
 
-    RequestState.RENDERING -> {
-      consumer.div {
-        this@div.id = id
-        cssClass?.also {
-          classes += it
-        }
+    this@renderPartial.inject(elementId)
+    this@renderPartial.prt(data, id)
+  }
 
-        with((page.request.components[id] ?: component)) {
-          consumer.content(page.request.exchange)
-        }
-      }
+  private fun Builder.renderPartial(
+    key: PartialKey,
+    session: S,
+    pageData: T,
+    data: Any?,
+    id: Long,
+    prt: PartialComponent<S, T>
+  ) {
+    val elementId = key.id() + if (id > 0) {
+      "-${id}"
+    } else {
+      ""
     }
 
-    RequestState.REDIRECTED -> {
-      // nothing to do here
-    }
+    this@renderPartial.inject(elementId)
+    prt.render(this@renderPartial, session, pageData, data, id)
   }
 }

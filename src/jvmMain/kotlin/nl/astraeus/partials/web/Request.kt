@@ -6,21 +6,10 @@ import io.undertow.server.handlers.form.FormParserFactory
 import io.undertow.server.handlers.form.MultiPartParserDefinition
 import io.undertow.util.HttpString
 import nl.astraeus.partials.maximumRequestSize
-import java.util.concurrent.ConcurrentHashMap
-
-enum class RequestState {
-  PROCESSING,
-  REDIRECTED,
-  RENDERING,
-}
 
 abstract class Request(
   val exchange: HttpServerExchange
 ) {
-  var state = RequestState.PROCESSING
-  val components = ConcurrentHashMap<String, PartialsComponent>()
-  var redirectUrl: String? = null
-
   open val multipart: Boolean = false
   abstract val data: Map<String, String>
   var pageData: String? = null

@@ -2,8 +2,6 @@ package nl.astraeus.partials.web
 
 import io.undertow.io.Sender
 import io.undertow.server.HttpServerExchange
-import kotlinx.html.HtmlBlockTag
-import kotlinx.html.consumers.DelayedConsumer
 import kotlinx.html.div
 import nl.astraeus.partials.tag.HtmlBuilder
 import nl.astraeus.partials.web.PartialsConnections.partialConnections
@@ -41,13 +39,13 @@ class PartialsConnection(
   }
 
   // send html content for the partial
-  fun sendPartials(vararg partials: HtmlBlockTag.() -> Unit) {
+  fun sendPartials(vararg partials: Builder.() -> Unit) {
     for (partial in partials) {
       val bldr = HtmlBuilder(prettyPrint = true, xhtmlCompatible = true)
 
-      val consumer = DelayedConsumer(bldr)
+      val consumer = Builder(bldr)
 
-      consumer.div { partial() }
+      consumer.div { partial.invoke(consumer) }
 
       val result = consumer.finalize()
 

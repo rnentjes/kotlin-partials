@@ -319,6 +319,7 @@ object PartialsHandler {
       width = "100%"
       height = "100%"
       zIndex = "1000"
+      outline = "none"
     }
     splash.id = "partials-splash"
     document.body?.appendChild(splash)

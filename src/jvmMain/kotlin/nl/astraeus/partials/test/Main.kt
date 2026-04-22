@@ -5,8 +5,8 @@ import io.undertow.server.session.InMemorySessionManager
 import io.undertow.server.session.Session
 import io.undertow.server.session.SessionListener
 import io.undertow.server.session.SessionManager
-import kotlinx.html.HtmlBlockTag
 import nl.astraeus.partials.createPartialsServer
+import nl.astraeus.partials.web.Builder
 import nl.astraeus.partials.web.PartialsConnections.partialConnections
 import nl.astraeus.partials.web.PartialsSession
 import java.io.Serializable
@@ -41,7 +41,7 @@ fun main() {
     Thread.sleep(999)
     println("We have ${sessions.size} sessions and are sending partials to ${partialConnections.size} connections")
     for (connection in partialConnections.values) {
-      val timePartial: HtmlBlockTag.() -> Unit = {
+      val timePartial: Builder.() -> Unit = {
         renderTimePartial(connection.getSession()?.timezone ?: ZoneId.systemDefault())
       }
       connection.sendPartials(timePartial)

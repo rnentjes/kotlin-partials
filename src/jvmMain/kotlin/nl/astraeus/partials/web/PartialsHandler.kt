@@ -8,28 +8,28 @@ import java.io.Serializable
 import java.lang.reflect.InvocationTargetException
 import kotlin.reflect.KClass
 
-interface PageFactory<S : PartialsSession, T : Serializable> {
+interface PageFactory<S : PartialsSession, T : Serializable, K : PartialKey> {
   val dataClass: KClass<T>
-  fun create(): PartialsPage<S, T>
+  fun create(): PartialsPage<S, T, K>
 }
 
-fun <S : PartialsSession, T : Serializable> pageFactory(
+fun <S : PartialsSession, T : Serializable, K : PartialKey> pageFactory(
   dataClass: KClass<T>,
-  create: () -> PartialsPage<S, T>
-): PageFactory<S, T> = object : PageFactory<S, T> {
+  create: () -> PartialsPage<S, T, K>
+): PageFactory<S, T, K> = object : PageFactory<S, T, K> {
   override val dataClass: KClass<T> = dataClass
-  override fun create(): PartialsPage<S, T> = create()
+  override fun create(): PartialsPage<S, T, K> = create()
 }
 
-inline fun <S : PartialsSession, reified T : Serializable> pageFactory(
-  noinline create: () -> PartialsPage<S, T>
-): PageFactory<S, T> = pageFactory(T::class, create)
+inline fun <S : PartialsSession, reified T : Serializable, K : PartialKey> pageFactory(
+  noinline create: () -> PartialsPage<S, T, K>
+): PageFactory<S, T, K> = pageFactory(T::class, create)
 
 class PartialsHandler<S : PartialsSession>(
-  val defaultPage: PageFactory<S, *>,
+  val defaultPage: PageFactory<S, *, *>,
   val session: () -> S,
   val next: HttpHandler? = null,
-  vararg val mappings: Pair<String, PageFactory<S, *>>
+  vararg val mappings: Pair<String, PageFactory<S, *, *>>
 ) : HttpHandler {
 
   init {
@@ -52,7 +52,7 @@ class PartialsHandler<S : PartialsSession>(
       return
     }
 
-    var factory: PageFactory<S, *>? = null
+    var factory: PageFactory<S, *, *>? = null
     if (path == "/") {
       factory = defaultPage
     } else {
@@ -73,7 +73,7 @@ class PartialsHandler<S : PartialsSession>(
 
       try {
         @Suppress("UNCHECKED_CAST")
-        val typedFactory = factory as PageFactory<S, Serializable>
+        val typedFactory = factory as PageFactory<S, Serializable, PartialKey>
         val handler = typedFactory.create()
 
         handler.request = request
