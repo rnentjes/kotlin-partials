@@ -13,10 +13,8 @@ import kotlinx.html.role
 import kotlinx.html.span
 import kotlinx.html.style
 import nl.astraeus.partials.web.Builder
-import nl.astraeus.partials.web.PartialComponent
-import nl.astraeus.partials.web.PartialKey
+import nl.astraeus.partials.web.PartialsPage
 import nl.astraeus.partials.web.RenderFunction
-import nl.astraeus.partials.web.Request
 import nl.astraeus.partials.web.onChange
 import nl.astraeus.partials.web.onClick
 import nl.astraeus.partials.web.onEnter
@@ -36,71 +34,12 @@ class DashboardData(
   }
 }
 
-enum class DashboardKey : PartialKey {
-  PAGE_CONTAINER,
-  DROPPED_FILES,
-  HELLO,
-  SESSION_INFO,
-  PAGE_TITLE,
-  MY_COMPONENT,
-  ;
-}
-
-class MyComponent : PartialComponent<TestSession, DashboardData>() {
-
-  override fun process(
-    request: Request,
-    session: TestSession,
-    pageData: DashboardData
-  ) {
-    println("MyComponent.process")
-
-    if (request.get("action") == "click_component") {
-      pageData.count++
-      pageData.title = "Clicker! [clicked me ${pageData.count} times!] <MyComponent action>"
-
-      refresh(DashboardKey.HELLO)
-    }
-  }
-
-  override fun Builder.content(
-    session: TestSession,
-    pageData: DashboardData,
-    data: Any?,
-    id: Long
-  ) {
-    div {
-      div {
-        +"This is my component: $data"
-      }
-      div {
-        input {
-          type = InputType.button
-          name = "action"
-          value = "Click"
-
-          onClick("action" to "click_component")
-        }
-      }
-    }
-  }
-
-}
-
-class DashboardPage : HeadPage<DashboardData, DashboardKey>({ DashboardData() }) {
+class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
   var filesDropped: String = ""
 
-  override fun onInit() {
-    partial(DashboardKey.PAGE_CONTAINER, { _, _ -> this.pageContainer() })
-    partial(DashboardKey.DROPPED_FILES) { _, _ -> this.droppedFiles() }
-    partial(DashboardKey.HELLO) { _, _ -> this.hello() }
-    partial(DashboardKey.SESSION_INFO) { data, id -> this.sessionInfo(data) }
-    partial(DashboardKey.MY_COMPONENT, MyComponent())
-  }
-
   override fun process(): String? {
-    refresh(DashboardKey.DROPPED_FILES)
-    refresh(DashboardKey.SESSION_INFO, "Mamaloe", id = 2)
+    refresh(droppedFiles)
+    refresh(sessionInfo, "Mamaloe", id = 2)
 
     request.value("action") { value ->
       when (value) {
@@ -110,14 +49,13 @@ class DashboardPage : HeadPage<DashboardData, DashboardKey>({ DashboardData() })
 
           pageTitle = "Click ${data.count}"
 
-          //refresh("page-title")
-          refresh(DashboardKey.HELLO)
-          refresh(functionTest, "From Process!")
+          refresh(helloPartial)
+          refresh(::testFunction, "Test F dat")
         }
 
         "input-change" -> {
           data.inputValue = request.data["input-value"] ?: ""
-          refresh(DashboardKey.PAGE_CONTAINER)
+          refresh(pageContainer)
         }
 
         "drop-file", "upload" -> {
@@ -133,17 +71,17 @@ class DashboardPage : HeadPage<DashboardData, DashboardKey>({ DashboardData() })
   }
 
   override fun Builder.content(exchange: HttpServerExchange) {
-    partial(DashboardKey.PAGE_CONTAINER)
+    partial(pageContainer)
   }
 
-  fun Builder.pageContainer() {
+  val pageContainer: RenderFunction = { _, _, _ ->
     div {
       h1 {
         +"Dashboard"
       }
 
       div {
-        partial(DashboardKey.HELLO)
+        partial(helloPartial)
 
         span {
           +"Some extra blaat"
@@ -188,29 +126,21 @@ class DashboardPage : HeadPage<DashboardData, DashboardKey>({ DashboardData() })
         }
       }
       hr {}
-      partial(DashboardKey.DROPPED_FILES)
+      partial(droppedFiles)
       hr {}
-      partial(DashboardKey.SESSION_INFO, 1, 1)
-      partial(DashboardKey.SESSION_INFO, "Pipo!", 2)
+      partial(sessionInfo, 1, 1)
+      partial(sessionInfo, "Pipo!", 2)
       hr {}
       a {
         href = "/index"
         +"Index"
       }
       hr {}
-      partial(DashboardKey.MY_COMPONENT, "MyCompDat")
-      hr {}
-      partial(functionTest, "Func Test!")
+      partial(::testFunction, "test Function init")
     }
   }
 
-  val functionTest: RenderFunction = { page, data, id ->
-    div {
-      +"Function!! $data"
-    }
-  }
-
-  fun Builder.droppedFiles() {
+  val droppedFiles: RenderFunction = { _, _, _ ->
     div {
       if (filesDropped.isNotEmpty()) {
         +"Files dropped/uploaded: $filesDropped"
@@ -220,7 +150,7 @@ class DashboardPage : HeadPage<DashboardData, DashboardKey>({ DashboardData() })
     }
   }
 
-  fun Builder.hello() {
+  val helloPartial: RenderFunction = { _, _, _ ->
     div {
       role = "button"
 
@@ -230,10 +160,21 @@ class DashboardPage : HeadPage<DashboardData, DashboardKey>({ DashboardData() })
     }
   }
 
-  fun Builder.sessionInfo(data: Any?) {
+  val sessionInfo: RenderFunction = { _, dat, _ ->
     div {
       id = "pipo"
-      +"Session id: ${session.id} - ${data ?: "No data"}"
+      +"Session id: ${session.id} - ${dat ?: "No data"}"
+    }
+  }
+
+  fun testFunction(
+    builder: Builder,
+    page: PartialsPage<*, *>,
+    data: Any?,
+    id: Long
+  ) {
+    builder.div {
+      +"testFunction div! Data: $data"
     }
   }
 

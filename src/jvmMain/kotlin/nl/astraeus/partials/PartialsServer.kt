@@ -15,7 +15,6 @@ import io.undertow.server.session.SessionManager
 import nl.astraeus.partials.web.NoData
 import nl.astraeus.partials.web.NotFoundPage
 import nl.astraeus.partials.web.PageFactory
-import nl.astraeus.partials.web.PartialKey
 import nl.astraeus.partials.web.PartialsCredentialRepository
 import nl.astraeus.partials.web.PartialsHandler
 import nl.astraeus.partials.web.PartialsPage
@@ -34,7 +33,7 @@ var maximumRequestSize: Long = 100 * 1024 * 1024
 fun <S : PartialsSession> createPartialsServer(
   port: Int = 8080,
   session: () -> S,
-  vararg mapping: Pair<String, PageFactory<S, *, *>>,
+  vararg mapping: Pair<String, PageFactory<S, *>>,
   logger: PartialsLogger = DefaultPartialsLogger(),
   sessionManager: SessionManager = InMemorySessionManager("SESSION_MANAGER"),
   sessionConfig: SessionCookieConfig = createSessionCookieConfig(),
@@ -46,7 +45,7 @@ fun <S : PartialsSession> createPartialsServer(
   partialsLogger = logger
   maximumRequestSize = maxRequestSize
 
-  val defaultPage = mapping.firstOrNull()?.second ?: pageFactory<S, NoData, PartialKey> { NotFoundPage<S>() }
+  val defaultPage = mapping.firstOrNull()?.second ?: pageFactory<S, NoData> { NotFoundPage<S>() }
 
   val resourceHandler = createStaticResourceHandler(resourceBasePath, resourceUrlPrefix)
   val partialsHandler = createPartialsHandler(defaultPage, session, resourceHandler, mapping)
@@ -111,10 +110,10 @@ fun createStaticResourceHandler(
 )
 
 fun <S : PartialsSession> createPartialsHandler(
-  defaultPage: PageFactory<S, *, *>,
+  defaultPage: PageFactory<S, *>,
   session: () -> S,
   next: HttpHandler,
-  mapping: Array<out Pair<String, PageFactory<S, *, *>>>
+  mapping: Array<out Pair<String, PageFactory<S, *>>>
 ): PartialsHandler<S> = PartialsHandler(
   defaultPage,
   session,
@@ -150,7 +149,7 @@ fun <S : PartialsSession> createSessionHandler(
 
 fun <S : PartialsSession> reflectivePageFactory(
   clazz: KClass<*>
-): PageFactory<S, *, *> {
+): PageFactory<S, *> {
   val constructor = getNoArgConstructor(clazz)
   val dataProperty = clazz.memberProperties.firstOrNull { it.name == "data" }
     ?: error("Expected a data property on ${clazz.qualifiedName}")
@@ -158,9 +157,9 @@ fun <S : PartialsSession> reflectivePageFactory(
     ?: error("Type classifier is not a KClass (was: ${dataProperty.returnType.classifier})")
 
   @Suppress("UNCHECKED_CAST")
-  return object : PageFactory<S, Serializable, PartialKey> {
+  return object : PageFactory<S, Serializable> {
     override val dataClass: KClass<Serializable> = dataClass as KClass<Serializable>
-    override fun create(): PartialsPage<S, Serializable, PartialKey> = constructor.call() as PartialsPage<S, Serializable, PartialKey>
+    override fun create(): PartialsPage<S, Serializable> = constructor.call() as PartialsPage<S, Serializable>
   }
 }
 

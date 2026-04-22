@@ -11,7 +11,6 @@ import kotlinx.html.input
 import kotlinx.html.span
 import nl.astraeus.partials.web.Builder
 import nl.astraeus.partials.web.NoData
-import nl.astraeus.partials.web.PageDataKey
 import nl.astraeus.partials.web.onClick
 import nl.astraeus.partials.web.onPasskeyLogin
 import nl.astraeus.partials.web.onPasskeyRegister
@@ -19,7 +18,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-class IndexPage : HeadPage<NoData, PageDataKey>({ NoData() }) {
+class IndexPage : HeadPage<NoData>({ NoData() }) {
 
   override fun process(): String? {
     if (request.get("action") == "dashboard") {

@@ -10,7 +10,7 @@ import kotlinx.html.id
 import kotlinx.html.p
 import kotlinx.html.title
 
-open class NotFoundPage<S : PartialsSession>() : PartialsPage<S, NoData, PartialKey>({ NoData() }) {
+open class NotFoundPage<S : PartialsSession>() : PartialsPage<S, NoData>({ NoData() }) {
   open var pageTitle: String = "Not found"
 
   override fun Builder.content(exchange: HttpServerExchange) {

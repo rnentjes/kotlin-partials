@@ -5,13 +5,12 @@ import kotlinx.html.head
 import kotlinx.html.id
 import kotlinx.html.link
 import kotlinx.html.title
-import nl.astraeus.partials.web.PartialKey
 import nl.astraeus.partials.web.PartialsPage
 import java.io.Serializable
 
-abstract class HeadPage<T : Serializable, K : PartialKey>(
+abstract class HeadPage<T : Serializable>(
   initialData: () -> T
-) : PartialsPage<TestSession, T, K>(initialData) {
+) : PartialsPage<TestSession, T>(initialData) {
   open var pageTitle: String = "Partials"
 
   override fun HTML.head() {
