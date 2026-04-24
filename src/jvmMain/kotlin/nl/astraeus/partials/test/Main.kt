@@ -19,7 +19,7 @@ data class TestSession(
 ) : PartialsSession(), Serializable
 
 fun main() {
-  PartialConfig.debug = true
+  PartialConfig.debug = false
   TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
   val sessionManager: SessionManager = InMemorySessionManager("SESSION_MANAGER")
   sessionManager.registerSessionListener(testSessionListener)

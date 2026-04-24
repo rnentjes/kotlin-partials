@@ -6,7 +6,6 @@ import io.undertow.util.Headers
 import kotlinx.html.CoreAttributeGroupFacade
 import kotlinx.html.FormEncType
 import kotlinx.html.FormMethod
-import kotlinx.html.HTML
 import kotlinx.html.INPUT
 import kotlinx.html.InputType
 import kotlinx.html.body
@@ -133,6 +132,7 @@ data class RefreshFunction(
 
 object PartialConfig {
   var debug = false
+  val hashBytes: Int = 8
 }
 
 fun Builder.renderPartialFunction(rf: RefreshFunction) {
@@ -144,12 +144,6 @@ fun Builder.renderPartialFunction(rf: RefreshFunction) {
 
   this.inject(elementId)
   rf.rrf.renderFunction.invoke(this, rf.data, rf.id)
-}
-
-class EmptyPage : PartialsPage<PartialsSession, NoData>({ NoData() }) {
-  override fun Builder.content(exchange: HttpServerExchange) {
-    div {}
-  }
 }
 
 abstract class PartialsPage<S : PartialsSession, T : Serializable>(
@@ -170,7 +164,8 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
 
   internal val functionToRefresh = mutableSetOf<RefreshFunction>()
 
-  fun getPartialsConnection() = PartialsConnections.partialConnections[connectionId]
+  val partialsConnection: PartialsConnection?
+    get() = PartialsConnections.partialConnections[connectionId]
 
   open fun onInit() {}
 
@@ -235,7 +230,7 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
 
   open fun Builder.render(exchange: HttpServerExchange) {
     html {
-      head()
+      headContent()
       body {
         main {
           form(method = FormMethod.post, encType = FormEncType.multipartFormData) {
@@ -267,7 +262,7 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
     }
   }
 
-  open fun HTML.head() {
+  open fun Builder.headContent() {
     head {
       id = "page-head"
       title {

@@ -1,7 +1,6 @@
 package nl.astraeus.partials.web
 
 import io.undertow.server.HttpServerExchange
-import kotlinx.html.HTML
 import kotlinx.html.body
 import kotlinx.html.h1
 import kotlinx.html.head
@@ -15,7 +14,7 @@ open class NotFoundPage<S : PartialsSession>() : PartialsPage<S, NoData>({ NoDat
 
   override fun Builder.content(exchange: HttpServerExchange) {
     html {
-      head()
+      headContent()
       body {
         h1 { +"Not found" }
         p {
@@ -25,7 +24,7 @@ open class NotFoundPage<S : PartialsSession>() : PartialsPage<S, NoData>({ NoDat
     }
   }
 
-  override fun HTML.head() {
+  override fun Builder.headContent() {
     head {
       id = "page-head"
       title {

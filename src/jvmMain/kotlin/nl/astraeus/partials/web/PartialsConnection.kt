@@ -39,21 +39,6 @@ class PartialsConnection(
   }
 
   // send html content for the partial
-  fun sendPartials(vararg partials: Builder.() -> Unit) {
-    for (partial in partials) {
-      val bldr = HtmlBuilder(prettyPrint = true, xhtmlCompatible = true)
-
-      val consumer = Builder(bldr)
-
-      consumer.div { partial.invoke(consumer) }
-
-      val result = consumer.finalize()
-
-      sendPartials(result)
-    }
-  }
-
-  // send html content for the partial
   fun sendPartial(partial: RegisteredRenderFunction, data: Any? = null, id: Long = 0) {
     val bldr = HtmlBuilder(prettyPrint = true, xhtmlCompatible = true)
 

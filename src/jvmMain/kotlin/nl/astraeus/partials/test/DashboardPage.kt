@@ -50,6 +50,7 @@ class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
 
           refresh(helloPartial)
           refresh(outsideInfo, "Test F dat")
+          refresh(titlePartial)
         }
 
         "input-change" -> {
@@ -167,8 +168,8 @@ class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
 
 }
 
-val outsideInfo by partial { dat, _ ->
+val outsideInfo by partial { data, _ ->
   div {
-    +"Outside info, data: ${dat ?: "No data"}"
+    +"Outside info, data: ${data ?: "No data"}"
   }
 }
