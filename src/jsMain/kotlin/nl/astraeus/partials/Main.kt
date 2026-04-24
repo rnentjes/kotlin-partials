@@ -19,7 +19,7 @@ fun main() {
   window.requestAnimationFrame {
     window.requestAnimationFrame {
       // send timezone to server
-      PartialsHandler.sendPartialEvent()
+      PartialsHandler.sendPartialEvent(splash = false)
     }
   }
 }

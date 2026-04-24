@@ -146,9 +146,10 @@ object PartialsHandler {
 
   fun sendPartialEvent(
     parameters: String = "",
-    fileList: FileList? = null
+    fileList: FileList? = null,
+    splash: Boolean = true
   ) {
-    showSplash()
+    showSplash(splash)
 
     val form = document.getElementById("page-form") as? HTMLFormElement
     val formData = if (form != null) {
@@ -302,7 +303,7 @@ object PartialsHandler {
   var inputSelectionStart = -1
   var taSelectionStart = -1
 
-  private fun showSplash() {
+  private fun showSplash(splashDiv: Boolean = true) {
     val ae = activeElement
     if (ae is HTMLInputElement) {
       inputSelectionStart = ae.selectionStart ?: -1
@@ -311,23 +312,25 @@ object PartialsHandler {
       taSelectionStart = ae.selectionStart ?: -1
     }
 
-    val splash = document.createElement("div") as HTMLDivElement
-    with(splash.style) {
-      position = "fixed"
-      left = "0"
-      top = "0"
-      width = "100%"
-      height = "100%"
-      zIndex = "1000"
-      outline = "none"
-    }
-    splash.id = "partials-splash"
-    document.body?.appendChild(splash)
+    if (splashDiv) {
+      val splash = document.createElement("div") as HTMLDivElement
+      with(splash.style) {
+        position = "fixed"
+        left = "0"
+        top = "0"
+        width = "100%"
+        height = "100%"
+        zIndex = "1000"
+        outline = "none"
+      }
+      splash.id = "partials-splash"
+      document.body?.appendChild(splash)
 
-    window.requestAnimationFrame {
-      splash.tabIndex = -1
-      splash.focus()
-      splash.className = "splash"
+      window.requestAnimationFrame {
+        splash.tabIndex = -1
+        splash.focus()
+        splash.className = "splash"
+      }
     }
   }
 

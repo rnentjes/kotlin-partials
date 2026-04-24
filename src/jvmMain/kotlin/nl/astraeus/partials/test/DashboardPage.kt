@@ -13,12 +13,11 @@ import kotlinx.html.role
 import kotlinx.html.span
 import kotlinx.html.style
 import nl.astraeus.partials.web.Builder
-import nl.astraeus.partials.web.PartialsPage
-import nl.astraeus.partials.web.RenderFunction
 import nl.astraeus.partials.web.onChange
 import nl.astraeus.partials.web.onClick
 import nl.astraeus.partials.web.onEnter
 import nl.astraeus.partials.web.onFileDrop
+import nl.astraeus.partials.web.partial
 import java.io.Serializable
 
 class DashboardData(
@@ -50,7 +49,7 @@ class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
           pageTitle = "Click ${data.count}"
 
           refresh(helloPartial)
-          refresh(::testFunction, "Test F dat")
+          refresh(outsideInfo, "Test F dat")
         }
 
         "input-change" -> {
@@ -74,7 +73,7 @@ class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
     partial(pageContainer)
   }
 
-  val pageContainer: RenderFunction = { _, _, _ ->
+  val pageContainer by partial { _, _ ->
     div {
       h1 {
         +"Dashboard"
@@ -136,11 +135,11 @@ class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
         +"Index"
       }
       hr {}
-      partial(::testFunction, "test Function init")
+      partial(outsideInfo, "outside info init")
     }
   }
 
-  val droppedFiles: RenderFunction = { _, _, _ ->
+  val droppedFiles by partial { _, _ ->
     div {
       if (filesDropped.isNotEmpty()) {
         +"Files dropped/uploaded: $filesDropped"
@@ -150,7 +149,7 @@ class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
     }
   }
 
-  val helloPartial: RenderFunction = { _, _, _ ->
+  val helloPartial by partial { _, _ ->
     div {
       role = "button"
 
@@ -160,22 +159,16 @@ class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
     }
   }
 
-  val sessionInfo: RenderFunction = { _, dat, _ ->
+  val sessionInfo by partial { dat, _ ->
     div {
-      id = "pipo"
       +"Session id: ${session.id} - ${dat ?: "No data"}"
     }
   }
 
-  fun testFunction(
-    builder: Builder,
-    page: PartialsPage<*, *>,
-    data: Any?,
-    id: Long
-  ) {
-    builder.div {
-      +"testFunction div! Data: $data"
-    }
-  }
+}
 
+val outsideInfo by partial { dat, _ ->
+  div {
+    +"Outside info, data: ${dat ?: "No data"}"
+  }
 }

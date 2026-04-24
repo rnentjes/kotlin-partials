@@ -52,6 +52,27 @@ class PartialsConnection(
       sendPartials(result)
     }
   }
+
+  // send html content for the partial
+  fun sendPartial(partial: RegisteredRenderFunction, data: Any? = null, id: Long = 0) {
+    val bldr = HtmlBuilder(prettyPrint = true, xhtmlCompatible = true)
+
+    val consumer = Builder(bldr)
+
+    consumer.div {
+      consumer.renderPartialFunction(
+        RefreshFunction(
+          partial,
+          data,
+          id
+        )
+      )
+    }
+
+    val result = consumer.finalize()
+
+    sendPartials(result)
+  }
 }
 
 object PartialsConnections {

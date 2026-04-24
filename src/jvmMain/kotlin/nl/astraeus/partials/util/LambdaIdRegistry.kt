@@ -22,26 +22,6 @@ object RenderFunctionIds {
   var debug = false
   private val cache = ConcurrentHashMap<Class<*>, List<Field>>()
 
-  fun String.camelToDash(): String {
-    val result = StringBuilder()
-    var capital = false
-
-    for (ch in this) {
-      if (ch.isUpperCase() && !capital) {
-        result.append("-")
-        result.append(ch.lowercase())
-        capital = true
-      } else if (ch.isLowerCase() && capital) {
-        result.append(ch)
-        capital = false
-      } else {
-        result.append(ch)
-      }
-    }
-
-    return result.toString()
-  }
-
   fun idFor(owner: Any, func: Any, prefix: String = "id-"): String {
     val key = if (func is KFunction<*>) {
       func.name.camelToDash()

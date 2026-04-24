@@ -14,6 +14,7 @@ import nl.astraeus.partials.web.NoData
 import nl.astraeus.partials.web.onClick
 import nl.astraeus.partials.web.onPasskeyLogin
 import nl.astraeus.partials.web.onPasskeyRegister
+import nl.astraeus.partials.web.partial
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -71,13 +72,14 @@ class IndexPage : HeadPage<NoData>({ NoData() }) {
         }
       }
       hr()
-      renderTimePartial(session.timezone)
+      partial(renderTimePartial, session.timezone)
     }
   }
-
 }
 
-fun Builder.renderTimePartial(zoneId: ZoneId) {
+val renderTimePartial by partial { zoneId, _ ->
+  check(zoneId is ZoneId)
+
   div {
     id = "show-timer"
 

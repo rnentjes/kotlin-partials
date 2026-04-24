@@ -22,7 +22,8 @@ import kotlinx.html.script
 import kotlinx.html.title
 import nl.astraeus.partials.tag.HtmlBuilder
 import nl.astraeus.partials.tag.IdInjectConsumer
-import nl.astraeus.partials.util.RenderFunctionIds
+import nl.astraeus.partials.util.Hasher
+import nl.astraeus.partials.util.camelToDash
 import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
@@ -30,10 +31,40 @@ import java.io.Serializable
 import java.nio.ByteBuffer
 import java.time.ZoneId
 import kotlin.io.encoding.Base64
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
 
 typealias Builder = IdInjectConsumer
-typealias RenderFunction = Builder.(PartialsPage<*, *>, Any?, Long) -> Unit
+typealias RenderFunction = Builder.(Any?, Long) -> Unit
 
+class RegisteredRenderFunction(
+  val id: String,
+  val renderFunction: RenderFunction,
+)
+
+class RenderFunctionDelegate(
+  private val func: RenderFunction
+) {
+  operator fun provideDelegate(thisRef: Any?, property: KProperty<*>): ReadOnlyProperty<Any?, RegisteredRenderFunction> {
+    val ownerName = thisRef?.javaClass?.simpleName ?: "top-level"
+    val key = "$ownerName-${property.name}".camelToDash()
+    val registered = RegisteredRenderFunction(
+      if (PartialConfig.debug) {
+        key
+      } else {
+        Hasher.stableShortId(key)
+      },
+      func
+    )
+    return ReadOnlyProperty { _, _ -> registered }
+  }
+}
+
+fun partial(func: RenderFunction) = RenderFunctionDelegate(func)
+
+fun Builder.partial(rrf: RegisteredRenderFunction, data: Any? = null, id: Long = 0) {
+  renderPartialFunction(RefreshFunction(rrf, data, id))
+}
 
 private fun CoreAttributeGroupFacade.doPost(
   eventName: String,
@@ -94,11 +125,32 @@ abstract class PartialsSession : Serializable {
 class NoData : Serializable
 
 data class RefreshFunction(
-  val func: RenderFunction,
+  val rrf: RegisteredRenderFunction,
   val data: Any? = null,
   val id: Long = 0,
   val last: Boolean = false,
 )
+
+object PartialConfig {
+  var debug = false
+}
+
+fun Builder.renderPartialFunction(rf: RefreshFunction) {
+  val elementId = rf.rrf.id + if (rf.id > 0L) {
+    "-${rf.id}"
+  } else {
+    ""
+  }
+
+  this.inject(elementId)
+  rf.rrf.renderFunction.invoke(this, rf.data, rf.id)
+}
+
+class EmptyPage : PartialsPage<PartialsSession, NoData>({ NoData() }) {
+  override fun Builder.content(exchange: HttpServerExchange) {
+    div {}
+  }
+}
 
 abstract class PartialsPage<S : PartialsSession, T : Serializable>(
   val initialData: () -> T
@@ -177,28 +229,8 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
 
   abstract fun Builder.content(exchange: HttpServerExchange)
 
-  fun refresh(func: RenderFunction, data: Any? = null, id: Long = 0, last: Boolean = false) {
-    functionToRefresh.add(RefreshFunction(func, data, id, last))
-  }
-
-  fun Builder.partial(func: RenderFunction, data: Any? = null, id: Long = 0) {
-    renderPartialFunction(
-      this@partial,
-      RefreshFunction(func, data, id)
-    )
-  }
-
-  fun renderPartialFunction(consumer: Builder, rf: RefreshFunction) {
-    val functionName = RenderFunctionIds.idFor(this, rf.func)
-
-    val elementId = functionName + if (rf.id > 0L) {
-      "-${rf.id}"
-    } else {
-      ""
-    }
-
-    consumer.inject(elementId)
-    rf.func.invoke(consumer, this@PartialsPage, rf.data, rf.id)
+  fun refresh(rrf: RegisteredRenderFunction, data: Any? = null, id: Long = 0, last: Boolean = false) {
+    functionToRefresh.add(RefreshFunction(rrf, data, id, last))
   }
 
   open fun Builder.render(exchange: HttpServerExchange) {
@@ -255,12 +287,12 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
 
         for (rf in functionToRefresh) {
           if (!rf.last) {
-            renderPartialFunction(consumer, rf)
+            consumer.renderPartialFunction(rf)
           }
         }
         for (rf in functionToRefresh) {
           if (rf.last) {
-            renderPartialFunction(consumer, rf)
+            consumer.renderPartialFunction(rf)
           }
         }
 
