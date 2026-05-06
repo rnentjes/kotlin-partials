@@ -46,7 +46,7 @@ class PartialsConnection(
 
     consumer.div {
       consumer.renderPartialFunction(
-        RefreshFunction(
+        UpdateFunction(
           partial,
           data,
           id

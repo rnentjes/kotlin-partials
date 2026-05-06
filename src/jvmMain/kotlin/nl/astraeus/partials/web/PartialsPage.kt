@@ -62,7 +62,7 @@ class RenderFunctionDelegate(
 fun partial(func: RenderFunction) = RenderFunctionDelegate(func)
 
 fun Builder.partial(rrf: RegisteredRenderFunction, data: Any? = null, id: Long = 0) {
-  renderPartialFunction(RefreshFunction(rrf, data, id))
+  renderPartialFunction(UpdateFunction(rrf, data, id))
 }
 
 private fun CoreAttributeGroupFacade.doPost(
@@ -123,7 +123,7 @@ abstract class PartialsSession : Serializable {
 
 class NoData : Serializable
 
-data class RefreshFunction(
+data class UpdateFunction(
   val rrf: RegisteredRenderFunction,
   val data: Any? = null,
   val id: Long = 0,
@@ -135,7 +135,7 @@ object PartialConfig {
   val hashBytes: Int = 8
 }
 
-fun Builder.renderPartialFunction(rf: RefreshFunction) {
+fun Builder.renderPartialFunction(rf: UpdateFunction) {
   val elementId = rf.rrf.id + if (rf.id > 0L) {
     "-${rf.id}"
   } else {
@@ -162,7 +162,7 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
     }
   }
 
-  internal val functionToRefresh = mutableSetOf<RefreshFunction>()
+  internal val functionToUpdate = mutableSetOf<UpdateFunction>()
 
   val partialsConnection: PartialsConnection?
     get() = PartialsConnections.partialConnections[connectionId]
@@ -224,8 +224,8 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
 
   abstract fun Builder.content(exchange: HttpServerExchange)
 
-  fun refresh(rrf: RegisteredRenderFunction, data: Any? = null, id: Long = 0, last: Boolean = false) {
-    functionToRefresh.add(RefreshFunction(rrf, data, id, last))
+  fun update(rrf: RegisteredRenderFunction, data: Any? = null, id: Long = 0, last: Boolean = false) {
+    functionToUpdate.add(UpdateFunction(rrf, data, id, last))
   }
 
   open fun Builder.render(exchange: HttpServerExchange) {
@@ -280,12 +280,12 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
       consumer.div {
         title = "Partials container"
 
-        for (rf in functionToRefresh) {
+        for (rf in functionToUpdate) {
           if (!rf.last) {
             consumer.renderPartialFunction(rf)
           }
         }
-        for (rf in functionToRefresh) {
+        for (rf in functionToUpdate) {
           if (rf.last) {
             consumer.renderPartialFunction(rf)
           }

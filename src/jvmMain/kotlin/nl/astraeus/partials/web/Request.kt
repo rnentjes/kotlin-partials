@@ -13,7 +13,7 @@ abstract class Request(
   open val multipart: Boolean = false
   abstract val data: Map<String, String>
   var pageData: String? = null
-  open val files: Map<String, FormData.FileItem> = emptyMap()
+  open val files: Map<String, FormData.FormValue> = emptyMap()
 
   val path: String = exchange.relativePath
 
@@ -81,7 +81,7 @@ class MultiPartDataRequest(
 ) : Request(exchange) {
   override val multipart: Boolean = true
   override val data = mutableMapOf<String, String>()
-  override val files = mutableMapOf<String, FormData.FileItem>()
+  override val files = mutableMapOf<String, FormData.FormValue>()
 
   init {
     val mp = MultiPartParserDefinition()
@@ -100,7 +100,7 @@ class MultiPartDataRequest(
         if (formValues != null) {
           for (formValue in formValues) {
             if (formValue.isFileItem) {
-              files[formValue.fileName] = formValue.fileItem
+              files[key] = formValue
             } else {
               // Store regular form fields
               if (key != "page-data") {

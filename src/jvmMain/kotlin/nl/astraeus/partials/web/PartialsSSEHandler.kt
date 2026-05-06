@@ -18,8 +18,9 @@ class PartialsSSEHandler(
 
     exchange.responseHeaders.apply {
       put(HttpString("Content-Type"), "text/event-stream; charset=UTF-8")
-      put(HttpString("Cache-Control"), "no-cache")
+      put(HttpString("Cache-Control"), "no-cache, no-transform")
       put(HttpString("Connection"), "keep-alive")
+      put(HttpString("X-Accel-Buffering"), "no")
     }
 
     exchange.statusCode = 200

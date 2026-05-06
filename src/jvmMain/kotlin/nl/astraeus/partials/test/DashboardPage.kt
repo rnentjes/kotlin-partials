@@ -37,8 +37,8 @@ class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
   var filesDropped: String = ""
 
   override fun process(): String? {
-    refresh(droppedFiles)
-    refresh(sessionInfo, "Mamaloe", id = 2)
+    update(droppedFiles)
+    update(sessionInfo, "Mamaloe", id = 2)
 
     request.value("action") { value ->
       when (value) {
@@ -48,14 +48,14 @@ class DashboardPage : HeadPage<DashboardData>({ DashboardData() }) {
 
           pageTitle = "Click ${data.count}"
 
-          refresh(helloPartial)
-          refresh(outsideInfo, "Test F dat")
-          refresh(titlePartial)
+          update(helloPartial)
+          update(outsideInfo, "Test F dat")
+          update(titlePartial)
         }
 
         "input-change" -> {
           data.inputValue = request.data["input-value"] ?: ""
-          refresh(pageContainer)
+          update(pageContainer)
         }
 
         "drop-file", "upload" -> {
