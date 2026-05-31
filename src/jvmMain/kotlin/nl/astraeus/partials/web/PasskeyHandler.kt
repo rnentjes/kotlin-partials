@@ -2,8 +2,8 @@ package nl.astraeus.partials.web
 
 import com.webauthn4j.WebAuthnAuthenticationManager
 import com.webauthn4j.WebAuthnRegistrationManager
-import com.webauthn4j.authenticator.AuthenticatorImpl
 import com.webauthn4j.converter.util.ObjectConverter
+import com.webauthn4j.credential.CredentialRecordImpl
 import com.webauthn4j.data.AuthenticationParameters
 import com.webauthn4j.data.AuthenticatorSelectionCriteria
 import com.webauthn4j.data.PublicKeyCredentialCreationOptions
@@ -118,13 +118,18 @@ class PasskeyHandler(
       json,
       RegistrationParameters(serverProperty, options.pubKeyCredParams, true, false)
     )
-    val authenticator = AuthenticatorImpl.createFromRegistrationData(registrationData)
+    val credentialRecord = CredentialRecordImpl(
+      registrationData.attestationObject ?: error("Attestation object not found"),
+      registrationData.collectedClientData,
+      registrationData.clientExtensions,
+      registrationData.transports,
+    )
 
     cr.addCredential(
       username = options.user.name,
       userHandle = options.user.id,
-      credentialId = authenticator.attestedCredentialData.credentialId,
-      authenticator = authenticator,
+      credentialId = credentialRecord.attestedCredentialData.credentialId,
+      credentialRecord = credentialRecord,
     )
   }
 
@@ -168,7 +173,8 @@ class PasskeyHandler(
       authenticationData,
       AuthenticationParameters(
         serverProperty(options.challenge),
-        credential.authenticator,
+        credential.credentialRecord,
+        null,
         true,
         false,
       )

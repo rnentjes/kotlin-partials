@@ -1,6 +1,6 @@
 package nl.astraeus.partials.web
 
-import com.webauthn4j.authenticator.Authenticator
+import com.webauthn4j.credential.CredentialRecord
 
 abstract class PartialsCredentialRepository {
   abstract val domain: String
@@ -14,7 +14,7 @@ abstract class PartialsCredentialRepository {
     username: String,
     userHandle: ByteArray,
     credentialId: ByteArray,
-    authenticator: Authenticator,
+    credentialRecord: CredentialRecord,
   )
 
   abstract fun getCredentialsForUsername(username: String): Set<ByteArray>
@@ -30,5 +30,5 @@ data class StoredCredential(
   val credentialId: ByteArray,
   val userHandle: ByteArray,
   val username: String,
-  val authenticator: Authenticator,
+  val credentialRecord: CredentialRecord,
 )

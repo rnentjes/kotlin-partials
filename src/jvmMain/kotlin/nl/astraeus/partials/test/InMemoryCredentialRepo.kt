@@ -1,6 +1,6 @@
 package nl.astraeus.partials.test
 
-import com.webauthn4j.authenticator.Authenticator
+import com.webauthn4j.credential.CredentialRecord
 import nl.astraeus.partials.web.PartialsCredentialRepository
 import nl.astraeus.partials.web.StoredCredential
 import java.util.*
@@ -26,13 +26,13 @@ class InMemoryCredentialRepo(
     username: String,
     userHandle: ByteArray,
     credentialId: ByteArray,
-    authenticator: Authenticator,
+    credentialRecord: CredentialRecord,
   ) {
     val store = StoredCredential(
       credentialId = credentialId,
       userHandle = userHandle,
       username = username,
-      authenticator = authenticator,
+      credentialRecord = credentialRecord,
     )
 
     userHandles[username] = userHandle
@@ -46,7 +46,7 @@ class InMemoryCredentialRepo(
   override fun updateSignatureCount(credentialId: ByteArray, newCount: Long) {
     val key = credentialId.base64Url()
     val existing = credentialsById[key] ?: return
-    existing.authenticator.counter = newCount
+    existing.credentialRecord.counter = newCount
   }
 
   override fun getCredentialsForUsername(username: String): Set<ByteArray> {
