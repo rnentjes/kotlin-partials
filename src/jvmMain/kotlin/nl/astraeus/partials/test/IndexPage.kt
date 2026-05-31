@@ -69,6 +69,12 @@ class IndexPage : HeadPage<NoData>({ NoData() }) {
               +"Login"
             }
           }
+
+          if (session.passkeyUsername != null) {
+            div {
+              +"Logged in as ${session.passkeyUsername}"
+            }
+          }
         }
       }
       hr()

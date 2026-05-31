@@ -79,7 +79,7 @@ class PasskeyHandler(
       exchange.statusCode = StatusCodes.BAD_REQUEST
     } else {
       val options = PublicKeyCredentialCreationOptions(
-        PublicKeyCredentialRpEntity(cr.applicationName, cr.domain),
+        PublicKeyCredentialRpEntity(cr.domain, cr.applicationName),
         PublicKeyCredentialUserEntity(userHandle, username, username),
         DefaultChallenge(),
         publicKeyCredentialParameters(),
@@ -92,7 +92,7 @@ class PasskeyHandler(
         null,
       )
 
-      val json = objectConverter.jsonConverter.writeValueAsString(options)
+      val json = objectConverter.jsonMapper.writeValueAsString(options)
       exchange.getSession().getPartialsSession<PartialsSession>()?.passkeyOptions = json
 
       exchange.responseHeaders.put(Headers.CONTENT_TYPE, "application/json")
@@ -161,7 +161,7 @@ class PasskeyHandler(
     val json = request.get("json") ?: error("json not found")
     val partialsSession = exchange.getSession().getPartialsSession<PartialsSession>()
     val optionsJson = partialsSession?.assertionRequest ?: error("assertionRequest not found")
-    val options = objectConverter.jsonConverter.readValue(
+    val options = objectConverter.jsonMapper.readValue(
       optionsJson,
       PublicKeyCredentialRequestOptions::class.java,
     ) ?: error("assertionRequest not found")
