@@ -30,6 +30,35 @@ object PasskeyHandler {
     return bytes
   }
 
+  private fun arrayBufferToBase64Url(buffer: dynamic): String {
+    val bytes = js("new Uint8Array(buffer)")
+    var binary = ""
+    for (i in 0 until bytes.length) {
+      binary += js("String.fromCharCode(bytes[i])") as String
+    }
+    return window.btoa(binary).replace('+', '-').replace('/', '_').replace("=", "")
+  }
+
+  private fun credentialToJson(credential: dynamic): String {
+    val response = credential.response
+    val out = json(
+      "id" to credential.id,
+      "rawId" to arrayBufferToBase64Url(credential.rawId),
+      "type" to credential.type,
+      "response" to json()
+    )
+    val outResponse = out.asDynamic().response
+
+    if (response.clientDataJSON != null) outResponse.clientDataJSON = arrayBufferToBase64Url(response.clientDataJSON)
+    if (response.attestationObject != null) outResponse.attestationObject = arrayBufferToBase64Url(response.attestationObject)
+    if (response.authenticatorData != null) outResponse.authenticatorData = arrayBufferToBase64Url(response.authenticatorData)
+    if (response.signature != null) outResponse.signature = arrayBufferToBase64Url(response.signature)
+    if (response.userHandle != null) outResponse.userHandle = arrayBufferToBase64Url(response.userHandle)
+    if (credential.authenticatorAttachment != null) out.asDynamic().authenticatorAttachment = credential.authenticatorAttachment
+
+    return JSON.stringify(out)
+  }
+
   private fun transformPublicKeyCredentialRequestOptions(options: dynamic): dynamic {
     val pk = if (options.publicKey != null) options.publicKey else options
     val out = js("Object.assign({}, pk)")
@@ -105,7 +134,7 @@ object PasskeyHandler {
               val finishRequestInit = RequestInit(
                 method = "POST",
                 headers = finishHeaders,
-                body = "json=" + enc(JSON.stringify(credential))
+                body = "json=" + enc(credentialToJson(credential))
               )
 
               window.fetch("/partials/passkey/register/finish", finishRequestInit).then { resp ->
@@ -159,7 +188,7 @@ object PasskeyHandler {
               method = "POST",
               credentials = RequestCredentials.INCLUDE,
               headers = finishHeaders,
-              body = "json=" + enc(JSON.stringify(credential))
+              body = "json=" + enc(credentialToJson(credential))
             )
 
             window.fetch("/partials/passkey/login/finish", finishRequestInit).then { resp ->

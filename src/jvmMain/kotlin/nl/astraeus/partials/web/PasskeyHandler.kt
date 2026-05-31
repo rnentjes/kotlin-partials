@@ -1,18 +1,26 @@
 package nl.astraeus.partials.web
 
-import com.yubico.webauthn.AssertionRequest
-import com.yubico.webauthn.FinishAssertionOptions
-import com.yubico.webauthn.FinishRegistrationOptions
-import com.yubico.webauthn.RelyingParty
-import com.yubico.webauthn.StartAssertionOptions
-import com.yubico.webauthn.StartRegistrationOptions
-import com.yubico.webauthn.data.AuthenticatorSelectionCriteria
-import com.yubico.webauthn.data.PublicKeyCredential
-import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions
-import com.yubico.webauthn.data.RelyingPartyIdentity
-import com.yubico.webauthn.data.ResidentKeyRequirement
-import com.yubico.webauthn.data.UserIdentity
-import com.yubico.webauthn.data.UserVerificationRequirement
+import com.webauthn4j.WebAuthnAuthenticationManager
+import com.webauthn4j.WebAuthnRegistrationManager
+import com.webauthn4j.authenticator.AuthenticatorImpl
+import com.webauthn4j.converter.util.ObjectConverter
+import com.webauthn4j.data.AuthenticationParameters
+import com.webauthn4j.data.AuthenticatorSelectionCriteria
+import com.webauthn4j.data.PublicKeyCredentialCreationOptions
+import com.webauthn4j.data.PublicKeyCredentialDescriptor
+import com.webauthn4j.data.PublicKeyCredentialParameters
+import com.webauthn4j.data.PublicKeyCredentialRequestOptions
+import com.webauthn4j.data.PublicKeyCredentialRpEntity
+import com.webauthn4j.data.PublicKeyCredentialType
+import com.webauthn4j.data.PublicKeyCredentialUserEntity
+import com.webauthn4j.data.RegistrationParameters
+import com.webauthn4j.data.ResidentKeyRequirement
+import com.webauthn4j.data.UserVerificationRequirement
+import com.webauthn4j.data.attestation.statement.COSEAlgorithmIdentifier
+import com.webauthn4j.data.client.Origin
+import com.webauthn4j.data.client.challenge.Challenge
+import com.webauthn4j.data.client.challenge.DefaultChallenge
+import com.webauthn4j.server.ServerProperty
 import io.undertow.server.HttpHandler
 import io.undertow.server.HttpServerExchange
 import io.undertow.util.Headers
@@ -26,16 +34,9 @@ class PasskeyHandler(
   private val loginBegin: String,
   private val loginFinish: String,
 ) : HttpHandler {
-  val rpIdentity = RelyingPartyIdentity.builder()
-    .id(cr.domain)       // Must match your domain
-    .name(cr.applicationName)
-    .build()
-
-  val rp = RelyingParty.builder()
-    .identity(rpIdentity)
-    .credentialRepository(cr) // You implement this interface
-    .origins(cr.origins)
-    .build()
+  private val objectConverter = ObjectConverter()
+  private val registrationManager = WebAuthnRegistrationManager.createNonStrictWebAuthnRegistrationManager(objectConverter)
+  private val authenticationManager = WebAuthnAuthenticationManager()
 
   override fun handleRequest(exchange: HttpServerExchange) {
     val path = exchange.requestPath
@@ -71,32 +72,28 @@ class PasskeyHandler(
 
     val request = exchange.request()
     val username = request.get("passkey-username")
-    val userHandle = WebAuthByteArray(ByteArray(32).also { random.nextBytes(it) })
+    val userHandle = ByteArray(32).also { random.nextBytes(it) }
 
     if (username == null) {
       // return error
       exchange.statusCode = StatusCodes.BAD_REQUEST
     } else {
-      val user = UserIdentity.builder()
-        .name(username)
-        .displayName(username)
-        .id(userHandle)  // random user handle
-        .build()
-
-      val options = rp.startRegistration(
-        StartRegistrationOptions.builder()
-          .user(user)
-          .authenticatorSelection(
-            AuthenticatorSelectionCriteria.builder()
-              .residentKey(ResidentKeyRequirement.REQUIRED)  // enables passkey
-              .userVerification(UserVerificationRequirement.PREFERRED)
-              .build()
-          )
-          .build()
+      val options = PublicKeyCredentialCreationOptions(
+        PublicKeyCredentialRpEntity(cr.applicationName, cr.domain),
+        PublicKeyCredentialUserEntity(userHandle, username, username),
+        DefaultChallenge(),
+        publicKeyCredentialParameters(),
+        null,
+        cr.getCredentialsForUsername(username).map {
+          PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, it, null)
+        },
+        AuthenticatorSelectionCriteria(null, ResidentKeyRequirement.REQUIRED, UserVerificationRequirement.PREFERRED),
+        null,
+        null,
       )
 
-      val json = options.toCredentialsCreateJson()
-      exchange.getSession().getPartialsSession<PartialsSession>()?.passkeyOptions = options.toJson()
+      val json = objectConverter.jsonConverter.writeValueAsString(options)
+      exchange.getSession().getPartialsSession<PartialsSession>()?.passkeyOptions = json
 
       exchange.responseHeaders.put(Headers.CONTENT_TYPE, "application/json")
       exchange.responseSender.send(json, Charsets.UTF_8)
@@ -108,42 +105,45 @@ class PasskeyHandler(
     exchange: HttpServerExchange
   ) {
     val request = exchange.request()
-    val json = request.get("json")
-    val pkc = PublicKeyCredential.parseRegistrationResponseJson(json)
+    val json = request.get("json") ?: error("json not found")
+    val optionsJson = exchange.getSession().getPartialsSession<PartialsSession>()?.passkeyOptions
+      ?: error("passkeyOptions not found")
+    val options = objectConverter.jsonConverter.readValue(
+      optionsJson,
+      PublicKeyCredentialCreationOptions::class.java,
+    ) ?: error("passkeyOptions not found")
+    val serverProperty = serverProperty(options.challenge)
 
-    val options = PublicKeyCredentialCreationOptions.fromJson(
-      exchange.getSession().getPartialsSession<PartialsSession>()?.passkeyOptions ?: error("passkeyOptions not found")
+    val registrationData = registrationManager.verify(
+      json,
+      RegistrationParameters(serverProperty, options.pubKeyCredParams, true, false)
     )
-
-    val result = rp.finishRegistration(
-      FinishRegistrationOptions.builder()
-        .request(options)   // the options from begin step
-        .response(pkc)
-        .build()
-    )
+    val authenticator = AuthenticatorImpl.createFromRegistrationData(registrationData)
 
     cr.addCredential(
       username = options.user.name,
       userHandle = options.user.id,
-      credentialId = result.keyId.id,
-      publicKeyCose = result.publicKeyCose,
-      signatureCount = result.signatureCount
+      credentialId = authenticator.attestedCredentialData.credentialId,
+      authenticator = authenticator,
     )
   }
 
   private fun beginAuthentication(
     exchange: HttpServerExchange
   ) {
-    val options = rp.startAssertion(
-      StartAssertionOptions.builder()
-        .userVerification(UserVerificationRequirement.PREFERRED)
-        .build()
+    val options = PublicKeyCredentialRequestOptions(
+      DefaultChallenge(),
+      null,
+      cr.domain,
+      null,
+      UserVerificationRequirement.PREFERRED,
+      null,
     )
 
     // Store `options` in session/cache
-    val json = options.toCredentialsGetJson()
+    val json = objectConverter.jsonConverter.writeValueAsString(options)
 
-    exchange.getSession().getPartialsSession<PartialsSession>()?.assertionRequest = options.toJson()
+    exchange.getSession().getPartialsSession<PartialsSession>()?.assertionRequest = json
 
     exchange.responseHeaders.put(Headers.CONTENT_TYPE, "application/json")
     exchange.responseSender.send(json, Charsets.UTF_8)
@@ -153,26 +153,45 @@ class PasskeyHandler(
     exchange: HttpServerExchange
   ) {
     val request = exchange.request()
-    val json = request.get("json")
-    val pkc = PublicKeyCredential.parseAssertionResponseJson(json)
+    val json = request.get("json") ?: error("json not found")
     val partialsSession = exchange.getSession().getPartialsSession<PartialsSession>()
-    val options = AssertionRequest.fromJson(
-      partialsSession?.assertionRequest ?: error("assertionRequest not found")
+    val optionsJson = partialsSession?.assertionRequest ?: error("assertionRequest not found")
+    val options = objectConverter.jsonConverter.readValue(
+      optionsJson,
+      PublicKeyCredentialRequestOptions::class.java,
+    ) ?: error("assertionRequest not found")
+    val authenticationData = authenticationManager.parse(json)
+    val credentialId = authenticationData.credentialId ?: error("Credential id not found")
+    val credential = cr.lookup(credentialId) ?: error("Credential not found")
+
+    authenticationManager.verify(
+      authenticationData,
+      AuthenticationParameters(
+        serverProperty(options.challenge),
+        credential.authenticator,
+        true,
+        false,
+      )
     )
 
-    val result = rp.finishAssertion(
-      FinishAssertionOptions.builder()
-        .request(options)
-        .response(pkc)
-        .build()
-    )
+    cr.updateSignatureCount(credential.credentialId, authenticationData.authenticatorData?.signCount ?: 0)
+    partialsSession.passkeyUsername = authenticationData.userHandle?.let { cr.getUsernameForUserHandle(it) } ?: credential.username
+  }
 
-    if (result.isSuccess) {
-      // Update signatureCount in your DB
-      // Create a session for result.username
-      cr.updateSignatureCount(result.credential.userHandle, result.signatureCount)
-      partialsSession.passkeyUsername = result.username
-    }
+  private fun publicKeyCredentialParameters(): List<PublicKeyCredentialParameters> {
+    return listOf(
+      PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.ES256),
+      PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.RS256),
+    )
+  }
+
+  private fun serverProperty(challenge: Challenge): ServerProperty {
+    return ServerProperty(
+      cr.origins.map { Origin(it) }.toSet(),
+      cr.domain,
+      challenge,
+      null,
+    )
   }
 
 }

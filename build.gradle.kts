@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "nl.astraeus"
-version = "4.0.1"
+version = "4.1.0-SNAPSHOT"
 
 repositories {
   mavenCentral()
@@ -51,7 +51,7 @@ kotlin {
 
         api("io.undertow:undertow-core:2.3.22.Final")
         api("org.jetbrains.kotlinx:kotlinx-html-jvm:0.12.0")
-        implementation("com.yubico:webauthn-server-core:2.9.0")
+        implementation("com.webauthn4j:webauthn4j-core:0.31.5.RELEASE")
       }
     }
     val jvmTest by getting
