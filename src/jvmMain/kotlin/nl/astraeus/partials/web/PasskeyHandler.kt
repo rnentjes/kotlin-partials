@@ -39,6 +39,11 @@ class PasskeyHandler(
   private val authenticationManager = WebAuthnAuthenticationManager()
 
   override fun handleRequest(exchange: HttpServerExchange) {
+    if (exchange.isInIoThread) {
+      exchange.dispatch(this)
+      return
+    }
+
     val path = exchange.requestPath
 
     when (path) {
@@ -146,7 +151,7 @@ class PasskeyHandler(
     )
 
     // Store `options` in session/cache
-    val json = objectConverter.jsonConverter.writeValueAsString(options)
+    val json = objectConverter.jsonMapper.writeValueAsString(options)
 
     exchange.getSession().getPartialsSession<PartialsSession>()?.assertionRequest = json
 
@@ -158,17 +163,40 @@ class PasskeyHandler(
     exchange: HttpServerExchange
   ) {
     val request = exchange.request()
-    val json = request.get("json") ?: error("json not found")
+    val json = request.get("json")
+    if (json == null) {
+      sendError(exchange, "Request is missing json parameter")
+      return
+    }
     val partialsSession = exchange.getSession().getPartialsSession<PartialsSession>()
-    val optionsJson = partialsSession?.assertionRequest ?: error("assertionRequest not found")
+    val optionsJson = partialsSession?.assertionRequest
+    if (optionsJson == null) {
+      sendError(exchange, "No assertionRequest found")
+      return
+    }
     val options = objectConverter.jsonMapper.readValue(
       optionsJson,
       PublicKeyCredentialRequestOptions::class.java,
-    ) ?: error("assertionRequest not found")
-    val authenticationData = authenticationManager.parse(json)
-    val credentialId = authenticationData.credentialId ?: error("Credential id not found")
-    val credential = cr.lookup(credentialId) ?: error("Credential not found")
+    )
 
+    if (options == null) {
+      sendError(exchange, "No assertionRequest found")
+      return
+    }
+
+    val authenticationData = authenticationManager.parse(json)
+    val credentialId = authenticationData.credentialId
+    if (credentialId == null) {
+      sendError(exchange, "Credential ID not found")
+      return
+    }
+    val credential = cr.lookup(credentialId)
+
+    if (credential == null) {
+      sendError(exchange, "Credential not found")
+      return
+
+    }
     authenticationManager.verify(
       authenticationData,
       AuthenticationParameters(
@@ -182,6 +210,12 @@ class PasskeyHandler(
 
     cr.updateSignatureCount(credential.credentialId, authenticationData.authenticatorData?.signCount ?: 0)
     partialsSession.passkeyUsername = authenticationData.userHandle?.let { cr.getUsernameForUserHandle(it) } ?: credential.username
+  }
+
+  private fun sendError(exchange: HttpServerExchange, message: String) {
+    exchange.statusCode = StatusCodes.BAD_REQUEST
+    exchange.responseHeaders.put(Headers.CONTENT_TYPE, "text/plain; charset=utf-8")
+    exchange.responseSender.send(message)
   }
 
   private fun publicKeyCredentialParameters(): List<PublicKeyCredentialParameters> {
