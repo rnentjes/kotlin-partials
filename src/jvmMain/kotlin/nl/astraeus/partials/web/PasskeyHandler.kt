@@ -113,7 +113,7 @@ class PasskeyHandler(
     val json = request.get("json") ?: error("json not found")
     val optionsJson = exchange.getSession().getPartialsSession<PartialsSession>()?.passkeyOptions
       ?: error("passkeyOptions not found")
-    val options = objectConverter.jsonConverter.readValue(
+    val options = objectConverter.jsonMapper.readValue(
       optionsJson,
       PublicKeyCredentialCreationOptions::class.java,
     ) ?: error("passkeyOptions not found")
@@ -226,12 +226,11 @@ class PasskeyHandler(
   }
 
   private fun serverProperty(challenge: Challenge): ServerProperty {
-    return ServerProperty(
-      cr.origins.map { Origin(it) }.toSet(),
-      cr.domain,
-      challenge,
-      null,
-    )
+    return ServerProperty.builder()
+      .origins(cr.origins.map { Origin(it) }.toSet())
+      .rpId(cr.domain)
+      .challenge(challenge)
+      .build()
   }
 
 }

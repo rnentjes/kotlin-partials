@@ -24,8 +24,8 @@ object PasskeyHandler {
 
     val binary = window.atob(base64)
     val bytes = Uint8Array(binary.length)
-    for (i in 0 until binary.length) {
-      bytes.asDynamic()[i] = (binary[i].code and 0xFF)
+    for ((index, element) in binary.withIndex()) {
+      bytes.asDynamic()[index] = (element.code and 0xFF)
     }
     return bytes
   }
