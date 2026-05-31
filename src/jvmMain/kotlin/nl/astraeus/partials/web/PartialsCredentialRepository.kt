@@ -2,8 +2,6 @@ package nl.astraeus.partials.web
 
 import com.webauthn4j.authenticator.Authenticator
 
-typealias WebAuthByteArray = ByteArray
-
 abstract class PartialsCredentialRepository {
   abstract val domain: String
   abstract val applicationName: String
@@ -14,23 +12,23 @@ abstract class PartialsCredentialRepository {
    */
   abstract fun addCredential(
     username: String,
-    userHandle: WebAuthByteArray,
-    credentialId: WebAuthByteArray,
+    userHandle: ByteArray,
+    credentialId: ByteArray,
     authenticator: Authenticator,
   )
 
-  abstract fun getCredentialsForUsername(username: String): Set<WebAuthByteArray>
+  abstract fun getCredentialsForUsername(username: String): Set<ByteArray>
 
-  abstract fun getUsernameForUserHandle(userHandle: WebAuthByteArray): String?
+  abstract fun getUsernameForUserHandle(userHandle: ByteArray): String?
 
-  abstract fun lookup(credentialId: WebAuthByteArray): StoredCredential?
+  abstract fun lookup(credentialId: ByteArray): StoredCredential?
 
-  abstract fun updateSignatureCount(credentialId: WebAuthByteArray, newCount: Long)
+  abstract fun updateSignatureCount(credentialId: ByteArray, newCount: Long)
 }
 
 data class StoredCredential(
-  val credentialId: WebAuthByteArray,
-  val userHandle: WebAuthByteArray,
+  val credentialId: ByteArray,
+  val userHandle: ByteArray,
   val username: String,
   val authenticator: Authenticator,
 )
