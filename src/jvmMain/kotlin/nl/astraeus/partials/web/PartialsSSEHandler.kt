@@ -31,6 +31,8 @@ class PartialsSSEHandler(
         ?: error("EventSource init call is missing $PARTIALS_CONNECTION_ID_HEADER"),
       exchange,
       sender,
+      exchange.queryParameters[PARTIALS_REQUEST_PATH]?.firstOrNull()
+        ?: error("EventSource init call is missing $PARTIALS_REQUEST_PATH"),
     )
     SenderTask.start()
 

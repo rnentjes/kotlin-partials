@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "nl.astraeus"
-version = "4.0.0"
+version = "4.0.1"
 
 repositories {
   mavenCentral()
@@ -47,11 +47,11 @@ kotlin {
     val commonTest by getting
     val jvmMain by getting {
       dependencies {
-        implementation("org.jetbrains.kotlin:kotlin-reflect:2.2.21")
+        api("org.jetbrains.kotlin:kotlin-reflect:2.2.21")
 
         api("io.undertow:undertow-core:2.3.22.Final")
         api("org.jetbrains.kotlinx:kotlinx-html-jvm:0.12.0")
-        api("com.yubico:webauthn-server-core:2.8.1")
+        implementation("com.yubico:webauthn-server-core:2.9.0")
       }
     }
     val jvmTest by getting

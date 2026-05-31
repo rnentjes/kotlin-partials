@@ -15,14 +15,16 @@ object SenderTask : Runnable {
   val running = AtomicBoolean(false)
 
   fun start() {
-    if (thread.isAlive) return
+    synchronized(this) {
+      if (thread.isAlive) return
 
-    if (thread.state == Thread.State.TERMINATED) {
-      thread = Thread(this)
+      if (thread.state == Thread.State.TERMINATED) {
+        thread = Thread(this)
+      }
+
+      thread.isDaemon = true
+      thread.start()
     }
-
-    thread.isDaemon = true
-    thread.start()
   }
 
   override fun run() {
@@ -65,6 +67,9 @@ object SenderTask : Runnable {
               partialsLogger.error(e.message ?: "Error", e)
             }
           }
+          if (it.lastSendTime + 50000 < System.currentTimeMillis()) {
+            it.sendPartials("<div></div>")
+          }
         }
 
         if (!moreEvents) {
@@ -74,7 +79,6 @@ object SenderTask : Runnable {
         partialsLogger.error(e.message ?: "Error", e)
       }
     }
-
   }
 
   internal fun isExpectedDisconnect(exception: Throwable?): Boolean {

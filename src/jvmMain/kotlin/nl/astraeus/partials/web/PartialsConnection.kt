@@ -14,6 +14,7 @@ class PartialsConnection(
   val id: String,
   val exchange: HttpServerExchange,
   val sender: Sender,
+  val path: String,
 ) {
   var isOpen = AtomicBoolean(true)
   val eventQueue = LinkedBlockingQueue<String>()
@@ -36,6 +37,7 @@ class PartialsConnection(
     for (partial in partials) {
       eventQueue.add(partial)
     }
+    lastSendTime = System.currentTimeMillis()
   }
 
   // send html content for the partial
