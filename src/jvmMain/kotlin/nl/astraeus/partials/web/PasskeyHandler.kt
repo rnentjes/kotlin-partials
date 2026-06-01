@@ -44,28 +44,12 @@ class PasskeyHandler(
       return
     }
 
-    val path = exchange.requestPath
-
-    when (path) {
-      registerBegin -> {
-        beginRegistration(exchange)
-      }
-
-      registerFinish -> {
-        finishRegistration(exchange)
-      }
-
-      loginBegin -> {
-        beginAuthentication(exchange)
-      }
-
-      loginFinish -> {
-        finishAuthentication(exchange)
-      }
-
-      else -> {
-        next.handleRequest(exchange)
-      }
+    when (exchange.requestPath) {
+      registerBegin -> beginRegistration(exchange)
+      registerFinish -> finishRegistration(exchange)
+      loginBegin -> beginAuthentication(exchange)
+      loginFinish -> finishAuthentication(exchange)
+      else -> next.handleRequest(exchange)
     }
   }
 
@@ -80,7 +64,6 @@ class PasskeyHandler(
     val userHandle = ByteArray(32).also { random.nextBytes(it) }
 
     if (username == null) {
-      // return error
       exchange.statusCode = StatusCodes.BAD_REQUEST
     } else {
       val options = PublicKeyCredentialCreationOptions(
@@ -106,9 +89,7 @@ class PasskeyHandler(
     exchange.endExchange()
   }
 
-  private fun finishRegistration(
-    exchange: HttpServerExchange
-  ) {
+  private fun finishRegistration(exchange: HttpServerExchange) {
     val request = exchange.request()
     val json = request.get("json") ?: error("json not found")
     val optionsJson = exchange.getSession().getPartialsSession<PartialsSession>()?.passkeyOptions
@@ -121,7 +102,7 @@ class PasskeyHandler(
 
     val registrationData = registrationManager.verify(
       json,
-      RegistrationParameters(serverProperty, options.pubKeyCredParams, true, false)
+      RegistrationParameters(serverProperty, options.pubKeyCredParams, false, false)
     )
     val credentialRecord = CredentialRecordImpl(
       registrationData.attestationObject ?: error("Attestation object not found"),
@@ -138,9 +119,7 @@ class PasskeyHandler(
     )
   }
 
-  private fun beginAuthentication(
-    exchange: HttpServerExchange
-  ) {
+  private fun beginAuthentication(exchange: HttpServerExchange) {
     val options = PublicKeyCredentialRequestOptions(
       DefaultChallenge(),
       null,
@@ -150,7 +129,6 @@ class PasskeyHandler(
       null,
     )
 
-    // Store `options` in session/cache
     val json = objectConverter.jsonMapper.writeValueAsString(options)
 
     exchange.getSession().getPartialsSession<PartialsSession>()?.assertionRequest = json
@@ -159,9 +137,7 @@ class PasskeyHandler(
     exchange.responseSender.send(json, Charsets.UTF_8)
   }
 
-  private fun finishAuthentication(
-    exchange: HttpServerExchange
-  ) {
+  private fun finishAuthentication(exchange: HttpServerExchange) {
     val request = exchange.request()
     val json = request.get("json")
     if (json == null) {
@@ -195,7 +171,6 @@ class PasskeyHandler(
     if (credential == null) {
       sendError(exchange, "Credential not found")
       return
-
     }
     authenticationManager.verify(
       authenticationData,
@@ -203,7 +178,7 @@ class PasskeyHandler(
         serverProperty(options.challenge),
         credential.credentialRecord,
         null,
-        true,
+        false,
         false,
       )
     )
@@ -232,5 +207,4 @@ class PasskeyHandler(
       .challenge(challenge)
       .build()
   }
-
 }
