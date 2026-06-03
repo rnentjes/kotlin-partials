@@ -62,6 +62,7 @@ class FormDataRequest(
 
   init {
     val parser = FormParserFactory.builder().build().createParser(exchange)
+    parser.setCharacterEncoding("utf-8")
     var formData = FormData(0)
     if (parser != null) {
       formData = parser.parseBlocking()
@@ -90,6 +91,7 @@ class MultiPartDataRequest(
       .addParser(mp)
       .build()
       .createParser(exchange)
+    parser.setCharacterEncoding("utf-8")
 
     var formData = FormData(0)
     if (parser != null) {

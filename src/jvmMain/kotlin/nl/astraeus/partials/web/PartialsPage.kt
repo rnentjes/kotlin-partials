@@ -234,6 +234,7 @@ abstract class PartialsPage<S : PartialsSession, T : Serializable>(
       body {
         main {
           form(method = FormMethod.post, encType = FormEncType.multipartFormData) {
+            acceptCharset = "UTF-8"
             id = "page-form"
             classes += ""
 
