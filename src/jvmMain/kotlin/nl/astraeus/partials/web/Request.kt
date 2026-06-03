@@ -101,14 +101,18 @@ class MultiPartDataRequest(
 
         if (formValues != null) {
           for (formValue in formValues) {
-            if (formValue.isFileItem) {
-              files[key] = formValue
-            } else {
-              // Store regular form fields
-              if (key != "page-data") {
-                data[key] = formValue.value ?: ""
+            if (key != "page-data") {
+              if (formValue.isFileItem) {
+                files[key] = formValue
               } else {
-                pageData = formValue.value
+                // Store regular form fields
+                data[key] = formValue.value ?: ""
+              }
+            } else {
+              pageData = if (formValue.isFileItem) {
+                String(formValue.fileItem.inputStream.readBytes(), Charsets.UTF_8)
+              } else {
+                formValue.value
               }
             }
           }
