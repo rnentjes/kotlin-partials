@@ -22,11 +22,21 @@ import java.time.format.DateTimeFormatter
 class IndexPage : HeadPage<NoData>({ NoData() }) {
 
   override fun process(): String? {
-    if (request.get("action") == "dashboard") {
-      return "/dashboard"
+    var result: String? = null
+
+    request.value("action") { value ->
+      when (value) {
+        "dashboard" -> {
+          result = "/dashboard"
+        }
+
+        "drag" -> {
+          result = "/drag"
+        }
+      }
     }
 
-    return null
+    return result
   }
 
   override fun Builder.content(exchange: HttpServerExchange) {
@@ -38,6 +48,11 @@ class IndexPage : HeadPage<NoData>({ NoData() }) {
         onClick("action" to "dashboard")
 
         +"To Dashboard with action [CLICK]"
+      }
+      div {
+        onClick("action" to "drag")
+
+        +"To Drag page with action [CLICK]"
       }
       br
       a {

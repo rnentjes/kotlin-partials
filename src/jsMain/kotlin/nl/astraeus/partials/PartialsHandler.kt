@@ -33,6 +33,8 @@ object PartialsHandler {
     "file-drop",
     "passkey-register",
     "passkey-login",
+    "drag-source",
+    "drag-target",
   )
 
   private var activeElement: Element? = null
@@ -62,6 +64,10 @@ object PartialsHandler {
       }
     }
 
+    restoreSelection()
+  }
+
+  private fun restoreSelection() {
     activeElement?.id?.also { id ->
       if (id.isNotBlank()) {
         val elementById = document.getElementById(id)
@@ -131,6 +137,53 @@ object PartialsHandler {
           event.stopPropagation()
 
           PasskeyHandler.login()
+        })
+      }
+
+      "drag-source" -> {
+        if (element is HTMLElement) {
+          element.draggable = true
+        }
+        val dragClass = element.getAttribute("data-p-drag-class") ?: "dragging"
+        val sourceId = element.getAttribute("data-p-drag-source") ?: element.id
+        element.addEventListener("dragstart", { event ->
+          val target = event.target as? HTMLElement
+          if (event is DragEvent && target != null) {
+            target.classList.add(dragClass)
+            event.dataTransfer?.setData("text/plain", sourceId)
+          }
+        })
+        element.addEventListener("dragend", { event ->
+          val target = event.target as? HTMLElement
+          target?.classList?.remove(dragClass)
+        })
+      }
+
+      "drag-target" -> {
+        val dropClass = element.getAttribute("data-p-drop-class") ?: "drop-target"
+        val targetId = element.getAttribute("data-p-drag-target") ?: element.id
+        val parameters = element.getAttribute("data-p-drag-parameters") ?: "action=drag"
+        element.addEventListener("dragover", { event ->
+          event.preventDefault()
+          val target = event.target as? HTMLElement
+          target?.classList?.add(dropClass)
+        })
+        element.addEventListener("dragleave", { event ->
+          val target = event.target as? HTMLElement
+          target?.classList?.remove(dropClass)
+        })
+        element.addEventListener("drop", { event ->
+          event.preventDefault()
+
+          val target = event.target as? HTMLElement
+          target?.classList?.remove(dropClass)
+          if (event is DragEvent && target != null) {
+            val sourceId = event.dataTransfer?.getData("text/plain")
+
+            console.log("drop source/dest", sourceId, targetId)
+
+            sendPartialEvent("${parameters}&dragSource=${sourceId}&dragTarget=${targetId}")
+          }
         })
       }
 
@@ -337,23 +390,6 @@ object PartialsHandler {
   private fun hideSplash() {
     document.getElementById("partials-splash")?.remove()
 
-    activeElement?.id?.also { id ->
-      if (id.isNotBlank()) {
-        val elementById = document.getElementById(id)
-        (elementById as? HTMLElement)?.focus()
-        if (inputSelectionStart != -1) {
-          (elementById as? HTMLInputElement)?.setSelectionRange(
-            inputSelectionStart,
-            inputSelectionStart
-          )
-        }
-        if (taSelectionStart != -1) {
-          (elementById as? HTMLTextAreaElement)?.setSelectionRange(
-            taSelectionStart,
-            taSelectionStart
-          )
-        }
-      }
-    }
+    restoreSelection()
   }
 }

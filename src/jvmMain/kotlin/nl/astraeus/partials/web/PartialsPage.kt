@@ -101,6 +101,24 @@ fun CoreAttributeGroupFacade.onPasskeyRegister(vararg parameters: Pair<String, S
 
 fun CoreAttributeGroupFacade.onPasskeyLogin(vararg parameters: Pair<String, String>) = doPost("passkey-login", *parameters)
 
+fun CoreAttributeGroupFacade.dragSource(sourceId: String, dragClass: String = "dragging") {
+  this.attributes["data-p-drag-source"] = sourceId
+  this.attributes["data-p-drag-class"] = dragClass
+}
+
+fun CoreAttributeGroupFacade.dragTarget(
+  targetId: String,
+  vararg parameters: Pair<String, String>,
+  dropClass: String = "drop-target"
+) {
+  this.attributes["data-p-drag-target"] = targetId
+  this.attributes["data-p-drop-class"] = dropClass
+
+  this.attributes["data-p-drag-parameters"] = parameters.joinToString("&") { pair ->
+    "${pair.first}=${pair.second}"
+  }
+}
+
 fun CoreAttributeGroupFacade.updateClass(clzz: String) {
   this.attributes["data-p-class"] = clzz
 }

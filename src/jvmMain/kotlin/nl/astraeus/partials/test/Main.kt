@@ -29,6 +29,7 @@ fun main() {
     { TestSession() },
     "/index" to IndexPage::class,
     "/dashboard" to DashboardPage::class,
+    "/drag" to DragPage::class,
     sessionManager = sessionManager,
     credentialRepo = InMemoryCredentialRepo(),
   )
@@ -42,7 +43,9 @@ fun main() {
     Thread.sleep(999)
     println("We have ${sessions.size} sessions and are sending partials to ${partialConnections.size} connections")
     for (connection in partialConnections.values) {
-      connection.sendPartial(renderTimePartial, connection.getSession()?.timezone ?: ZoneId.systemDefault())
+      if (connection.path == "/index") {
+        connection.sendPartial(renderTimePartial, connection.getSession()?.timezone ?: ZoneId.systemDefault())
+      }
     }
   }
 }
