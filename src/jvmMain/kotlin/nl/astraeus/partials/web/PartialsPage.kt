@@ -113,9 +113,12 @@ fun CoreAttributeGroupFacade.dragTarget(
 ) {
   this.attributes["data-p-drag-target"] = targetId
   this.attributes["data-p-drop-class"] = dropClass
-
-  this.attributes["data-p-drag-parameters"] = parameters.joinToString("&") { pair ->
-    "${pair.first}=${pair.second}"
+  this.attributes["data-p-drag-parameters"] = if (parameters.isEmpty()) {
+    "action=drag"
+  } else {
+    parameters.joinToString("&") { pair ->
+      "${pair.first}=${pair.second}"
+    }
   }
 }
 
