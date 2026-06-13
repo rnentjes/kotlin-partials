@@ -22,18 +22,17 @@ This way the logic to process events and how it affects the html view is close t
 
 ## Getting Started
 
-### Available on maven central
+### Available on Maven Central
 
 Add the following dependency to the Gradle build file:
 
-    implementation("nl.astraeus:kotlin-partials:2.0.0")
+    implementation("nl.astraeus:kotlin-partials:4.2.1")
 
 ### 1. Create a Page
 
-Extend `PartialsPage` to define your page logic and content. The `process` method is called whenever a request is made.
-In the process method you can call the `refresh` method with element id's to specify which parts of the
-page should be updated. The page is rendered again completely, but only the parts defined with `refresh`
-will be sent to the browser.
+Extend `PartialsPage` to define your page logic and content. The page class must have a no-arg constructor.
+The `process` method is called whenever a request is made. In the process method you can call `update` with
+a partial to specify which parts of the page should be updated. Only the partials passed to `update` will be sent to the browser.
 
 ```kotlin
 class MyPage : PartialsPage<MySession, MyPageData>(
@@ -41,11 +40,14 @@ class MyPage : PartialsPage<MySession, MyPageData>(
 ) {
 
   override fun process(): String? {
-    if (request.get("action") == "increment") {
-      data.counter++
+    request.value("action") { action ->
+      if (action == "increment") {
+        data.counter++
 
-      update(counterSection)
+        update(counterSection)
+      }
     }
+
     return null
   }
 
@@ -66,28 +68,24 @@ class MyPage : PartialsPage<MySession, MyPageData>(
 
   val counterSection by partial { _, _ ->
     div {
-      id = "counter-section"
-
       +"Counter: ${data.counter}"
     }
   }
 }
 ```
 
-#### Version 2.0
+#### Page lifecycle
 
-In version 2.0 you don't need to define `request`, `session` and `data` parameters in the constructor anymore. These will now be
-set for you after the object is created. This means you cannot access these members in the constructor or init.
+You don't define `request`, `session` and `data` parameters in the constructor. These are set after the page object is
+created. This means you cannot access these members in the constructor or init.
 
 If you need to initialize something with data from these members then overwrite the `onInit` method for this.
-
-There is Also the option to use components now. See [4. Components](#4-components)
 
 ### 2. Define your Session and Page data
 
 The page data is any state you want to maintain for a single page. It is serialized to the client and sent with every
 request. It should have a single constructor that can be called without any arguments. There is a NoData class if no
-page data is required.
+page data is required. The page data must implement `Serializable`.
 
 The session is your http session and is available on any page for a single user. A new session is made with the factory
 method passed to the createPartialsServer method.
@@ -97,9 +95,8 @@ data class MySession(
   var username: String = "Guest"
 ) : PartialsSession(), Serializable
 
-@Serializable
 data class MyPageData(
-  val counter: Int = 0
+  var counter: Int = 0
 ) : Serializable
 ```
 
@@ -109,7 +106,7 @@ Create and start the server. The first page in the mappings list will also be th
 
 ```kotlin
 fun main() {
-  val server = createPartialsServer(
+  val server = createPartialsServer<MySession>(
     port = 8080,
     session = { MySession() }, // session initializer
     "/index" to MyPage::class,
@@ -119,64 +116,65 @@ fun main() {
 }
 ```
 
-### 4. Components
+### 4. Reuse partials
 
-There are also components that you can include in a page to reuse code. For example, in our click example could look like this:
+Partials can be defined outside a page and reused by multiple pages. Pass the data needed by the partial when you render
+or update it.
 
 ```kotlin
-class MyPage : PartialsPage<MySession, MyPageData>(
-  { MyPageData() } // page data initializer
-) {
-
-  override fun Builder.content(exchange: HttpServerExchange) {
-    div {
-      h1 { +"Welcome, ${session.username}" }
-
-      include("counter-section", CounterComponent(data))
-
-      button {
-        // type button to prevent full page submit
-        type = ButtonType.button
-        onClick("action" to "increment")
-        +"Increment"
-      }
-    }
+val messagePartial by partial { message, _ ->
+  div {
+    +"Message: ${message ?: "No message"}"
   }
 }
 ```
 
 ```kotlin
-class CounterComponent(data: CounterData) : PartialsComponent() {
+class MyPage : PartialsPage<MySession, MyPageData>({ MyPageData() }) {
 
-  // id is passed from include so you can use the same component multiple times in a page
-  override fun process(id: String): String? {
-    if (request.get("action") == "increment") {
-      data.counter++
-
-      refresh(id)
+  override fun process(): String? {
+    request.value("action") { action ->
+      if (action == "change-message") {
+        update(messagePartial, "Updated message")
+      }
     }
 
     return null
   }
 
   override fun Builder.content(exchange: HttpServerExchange) {
-    // each component is surrounded with a div with it's id
-    // id is passed to process function in PartialsComponent
-    // an css class for the div can be added to the call as well
-    span {
-      +"Counter: ${data.counter}"
+    div {
+      partial(messagePartial, "Initial message")
+
+      button {
+        type = ButtonType.button
+        onClick("action" to "change-message")
+        +"Change message"
+      }
     }
   }
-
 }
 ```
 
-#### Redirect with components
+#### Multiple instances of the same partial
 
-When rendering a page there are two passes. The first is to execute all process functions, the one in PartialsPage first and then on order
-of
-appearance in the html. As soon as any process in the PartialsPage or an included component returns a redirect,
-the processing stops and a redirect is sent to the client. In the second pass the action HTML content is rendered.
+If the same partial is used more than once on a page, pass an id to keep the rendered elements separate:
+
+```kotlin
+partial(messagePartial, "First", id = 1)
+partial(messagePartial, "Second", id = 2)
+```
+
+Use the same id when updating one of them:
+
+```kotlin
+update(messagePartial, "Changed", id = 2)
+```
+
+#### Redirects
+
+Return a url from `process` to redirect. For a partials request the client will navigate to that url. For a normal
+request the server returns a 302 redirect.
 
 ## Features
 
@@ -185,12 +183,13 @@ the processing stops and a redirect is sent to the client. In the second pass th
 - **Automatic State Management**: Page data is automatically serialized and sent back and forth, maintaining state
   across partial updates.
 - **Real-time Updates**: Use `PartialsConnections` to push updates to clients from anywhere in your backend logic.
+- **File Drop and Passkeys**: Helpers are available for file drops and passkey register/login events.
 
 ## Example projects
 
 ### Test page
 
-In the project there is a [click counter test example]() in the `nl.astraeus.partials.test` package.
+In the project there are test pages in the `nl.astraeus.partials.test` package.
 
 ### Todo example
 
@@ -206,7 +205,7 @@ There is also a simple chat example to show server side events support:
 
 ### Notes example
 
-And there is an application to takes notes with a more complex UI:
+And there is an application to take notes with a more complex UI:
 
 - [Developer notes](https://github.com/rnentjes/developer-notes)
 
@@ -231,9 +230,9 @@ request:
 ```kotlin
 
 // in a PartialsPage class
-fun process() {
+override fun process(): String? {
   request.value("action") { action ->
-    when ("action") {
+    when (action) {
       "save" -> {
         // save the form
       }
@@ -242,6 +241,8 @@ fun process() {
       }
     }
   }
+
+  return null
 }
 ```
 
