@@ -43,8 +43,8 @@ class MyPage : PartialsPage<MySession, MyPageData>(
   override fun process(): String? {
     if (request.get("action") == "increment") {
       data.counter++
-      
-      refresh("counter-section")
+
+      update(counterSection)
     }
     return null
   }
@@ -53,11 +53,7 @@ class MyPage : PartialsPage<MySession, MyPageData>(
     div {
       h1 { +"Welcome, ${session.username}" }
 
-      div {
-        id = "counter-section"
-        
-        +"Counter: ${data.counter}"
-      }
+      partial(counterSection)
 
       button {
         // type button to prevent full page submit
@@ -65,6 +61,14 @@ class MyPage : PartialsPage<MySession, MyPageData>(
         onClick("action" to "increment")
         +"Increment"
       }
+    }
+  }
+
+  val counterSection by partial { _, _ ->
+    div {
+      id = "counter-section"
+
+      +"Counter: ${data.counter}"
     }
   }
 }

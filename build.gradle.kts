@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.JsSourceMapEmbedMode
 import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl
 
 plugins {
-  kotlin("multiplatform") version "2.2.21"
+  kotlin("multiplatform") version "2.4.0"
   signing
   id("org.jetbrains.dokka") version "2.0.0"
   id("com.vanniktech.maven.publish") version "0.35.0"
